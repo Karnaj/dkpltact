@@ -32,7 +32,7 @@ let is_or name = plth_const name "or"
 let is_neg name = plth_const name "not"
 let is_eq name = plth_const name "eq"
 let is_forall name = plth_const name "forall"
-let is_exists name = plth_const name "exists"
+let is_exists name = plth_const name "ex"
 
 let rec parse_set_list predicate_name args = match args with
   | T.Const (_, cst) when is_nil cst -> []
@@ -94,7 +94,7 @@ let parse_proof p _ = match p with
   | T.DB (_, id, _) ->
     let var_name =  B.string_of_ident id in
     Ast.Assumption(var_name)
-  | _ -> failwith "Not yet implemented.\n"
+  | _ -> Printf.printf "Not yet implemented proof.\n"; Ast.T
   (*
     For each connectives, there are two eliminations ways.
     The first one is the "correct" way. It uses the elimination symbol.
@@ -125,7 +125,7 @@ let rec parse_function_definition te = match te with
 
 let parse_basic_declaration name decl = match decl with 
   | T.Const(_, cst) when is_set cst -> 
-    Ast.SetDecl(name)
+      Ast.SetDecl(name)
   | T.App (T.Const(_, cst), T.Const (_, set), []) when is_el cst ->
       Ast.ElementDecl(name, pair_string_of_name set)
   | T.App (T.Const(_, cst), args, []) when is_predicate cst ->
@@ -150,20 +150,27 @@ let parse_basic_definition name ty te = match ty with
         | _ -> failwith "Return type of a function should be a set."
       end in
       Ast.FunctionDef(name, args, ret_type, te)
-  | T.App (T.Const(_, cst), _, []) when is_prf cst ->
-      Ast.TheoremDef(name, parse_proposition ty, Ast.T)
+  | T.App (T.Const(_, cst), proposition, []) when is_prf cst ->
+      Ast.TheoremDef(name, parse_proposition proposition, parse_proof ty [])
   | _ -> 
     failwith "Error, we can only define functions, predicate and theorems."  
 
-let parse_entry ctx e = match e with
+let parse_entry mname ctx e = match e with
   | E.Decl(_, id, _, _, decl) ->
       let name = B.string_of_ident id in
-      parse_basic_declaration name decl
+      (*let _ = Printf.printf "Parsing declaration %s...\n" name in *)
+      let e = parse_basic_declaration name decl in
+      let ctx = ((mname, name), e)::ctx in
+      (*let _ = Printf.printf "Declaration %s parsed\n" name in *)
+      (ctx, e)
   | E.Def(_, id, _, _, Some(ty), te) -> 
       let name = B.string_of_ident id in 
-      parse_basic_definition name ty te
+      let _ = Printf.printf "Parsing definition %s...\n" name in
+      let e = parse_basic_definition name ty te in
+      let _ = Printf.printf "Definition %s parsed\n" name in 
+      let ctx = ((mname, name), e)::ctx in
+      (ctx, e)
   | _ -> 
-      let _ = ctx in 
       raise (ParsingError "Error, can only translate definitions and declarations, rewrite rules and commands are not accepted.")  
 
 (*let _ = begin match el with

@@ -63,5 +63,3 @@ type declaration =
   | FunctionDef of string * (variable * name) list * name * element (* TODO *)
   | TheoremDef of string * proposition * proof
 
-
-type module_declarations = string * declaration list

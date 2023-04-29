@@ -136,6 +136,10 @@ let rec string_of_coq_prop prop = match prop with
     Printf.sprintf "%s = %s" pstring qstring
   | PredicateCall(f, args) -> string_of_call f args
 
+let string_of_coq_proof p = match p with
+  | Ast.T -> "apply I."
+  | _ -> ""
+
 
 let string_of_decl decl = match decl with
 | Ast.SetDecl(s) -> Printf.sprintf "Definition %s: Set." s 
@@ -145,7 +149,7 @@ let string_of_decl decl = match decl with
 | Ast.AxiomDecl(p, prop) -> Printf.sprintf "Axiom %s: %s" p (string_of_coq_prop (translate_proposition prop))
 | Ast.PredicateDef(f, args, prop) -> Printf.sprintf "Definition %s%s := %s." f (string_of_args args false) (string_of_coq_prop (translate_proposition prop))
 | Ast.FunctionDef(f, args, _, te) -> Printf.sprintf "Definition %s%s:= %s." f (string_of_args args false) (string_of_coq_element (translate_element te))
-| Ast.TheoremDef(p, prop, _) -> Printf.sprintf "Theorem %s: %s" p (string_of_coq_prop (translate_proposition prop))
+| Ast.TheoremDef(p, prop, proof) -> Printf.sprintf "Theorem %s: %s\n%s\nQed." p (string_of_coq_prop (translate_proposition prop)) (string_of_coq_proof proof) 
 
 let x = Conjonction(True, False)
 let x = Disjonction(x, True) 
