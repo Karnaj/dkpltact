@@ -125,33 +125,33 @@ let rec parse_function_definition te = match te with
 
 let parse_basic_declaration name decl = match decl with 
   | T.Const(_, cst) when is_set cst -> 
-      Ast.SetDecl(name)
+      Ast.Set
   | T.App (T.Const(_, cst), T.Const (_, set), []) when is_el cst ->
-      Ast.ElementDecl(name, pair_string_of_name set)
+      Ast.Element(pair_string_of_name set)
   | T.App (T.Const(_, cst), args, []) when is_predicate cst ->
-      Ast.PredicateDecl(name, parse_set_list name args)
+      Ast.PredicateSymbol(parse_set_list name args)
   | T.App (T.Const(_, cst), args, [T.Const(_, return)]) when is_function cst ->
-      Ast.FunctionDecl(name, parse_set_list name args, pair_string_of_name return)
+      Ast.FunctionSymbol(parse_set_list name args, pair_string_of_name return)
   | T.App (T.Const(_, cst), statement, []) when is_prf cst ->
       let statement = parse_proposition statement in
-      Ast.AxiomDecl(name, statement)
+      Ast.Axiom(statement)
   | _ -> 
     raise (ParsingError "We can only declare sets, elements, predicates, functions and poofs (axioms).")
 
 
-let parse_basic_definition name ty te = match ty with
+let parse_basic_definition ty te = match ty with
   | T.App (T.Const(_, cst), _, []) when is_predicate cst ->
       let args, te = parse_predicate_definition te in
-      Ast.PredicateDef(name, args, te)
+      Ast.Predicate(args, te)
   | T.App (T.Const(_, cst), _, [ret]) when is_function cst ->
       let args, te = parse_function_definition te in
       let ret_type = begin match ret with
         | T.Const(_, cst) -> pair_string_of_name cst
         | _ -> failwith "Return type of a function should be a set."
       end in
-      Ast.FunctionDef(name, args, ret_type, te)
+      Ast.Function(args, ret_type, te)
   | T.App (T.Const(_, cst), proposition, []) when is_prf cst ->
-      Ast.TheoremDef(name, parse_proposition proposition, parse_proof ty [])
+      Ast.Theorem(parse_proposition proposition, parse_proof ty [])
   | _ -> 
     failwith "Error, we can only define functions, predicate and theorems."  
 
@@ -160,16 +160,14 @@ let parse_entry mname ctx e = match e with
       let name = B.string_of_ident id in
       (*let _ = Printf.printf "Parsing declaration %s...\n" name in *)
       let e = parse_basic_declaration name decl in
-      let ctx = ((mname, name), e)::ctx in
       (*let _ = Printf.printf "Declaration %s parsed\n" name in *)
-      (ctx, e)
+      (mname, name, e)::ctx
   | E.Def(_, id, _, _, Some(ty), te) -> 
       let name = B.string_of_ident id in 
       let _ = Printf.printf "Parsing definition %s...\n" name in
-      let e = parse_basic_definition name ty te in
+      let e = parse_basic_definition ty te in
       let _ = Printf.printf "Definition %s parsed\n" name in 
-      let ctx = ((mname, name), e)::ctx in
-      (ctx, e)
+      (mname, name, e)::ctx
   | _ -> 
       raise (ParsingError "Error, can only translate definitions and declarations, rewrite rules and commands are not accepted.")  
 

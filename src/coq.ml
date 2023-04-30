@@ -142,14 +142,14 @@ let string_of_coq_proof p = match p with
 
 
 let string_of_decl decl = match decl with
-| Ast.SetDecl(s) -> Printf.sprintf "Definition %s: Set." s 
-| Ast.ElementDecl(x, set) -> Printf.sprintf "Definition %s: %s." x (string_of_name set)
-| Ast.FunctionDecl(f, args, ret) -> Printf.sprintf "Definition %s: %s -> %s." f (string_of_paramaters_type args) (string_of_name ret) 
-| Ast.PredicateDecl(f, args) -> Printf.sprintf "Definition %s: %s -> Prop." f (string_of_paramaters_type args)
-| Ast.AxiomDecl(p, prop) -> Printf.sprintf "Axiom %s: %s" p (string_of_coq_prop (translate_proposition prop))
-| Ast.PredicateDef(f, args, prop) -> Printf.sprintf "Definition %s%s := %s." f (string_of_args args false) (string_of_coq_prop (translate_proposition prop))
-| Ast.FunctionDef(f, args, _, te) -> Printf.sprintf "Definition %s%s:= %s." f (string_of_args args false) (string_of_coq_element (translate_element te))
-| Ast.TheoremDef(p, prop, proof) -> Printf.sprintf "Theorem %s: %s\n%s\nQed." p (string_of_coq_prop (translate_proposition prop)) (string_of_coq_proof proof) 
+| (_, s, Ast.Set) -> Printf.sprintf "Definition %s: Set." s
+| (_, x, Ast.Element(set)) -> Printf.sprintf "Definition %s: %s." x (string_of_name set)
+| (_, f, Ast.FunctionSymbol(args, ret)) -> Printf.sprintf "Definition %s: %s -> %s." f (string_of_paramaters_type args) (string_of_name ret) 
+| (_, f, Ast.PredicateSymbol(args)) -> Printf.sprintf "Definition %s: %s -> Prop." f (string_of_paramaters_type args)
+| (_, p, Ast.Axiom(prop)) -> Printf.sprintf "Axiom %s: %s" p (string_of_coq_prop (translate_proposition prop))
+| (_, f, Ast.Predicate(args, prop)) -> Printf.sprintf "Definition %s%s := %s." f (string_of_args args false) (string_of_coq_prop (translate_proposition prop))
+| (_, f, Ast.Function(args, _, te)) -> Printf.sprintf "Definition %s%s:= %s." f (string_of_args args false) (string_of_coq_element (translate_element te))
+| (_, p, Ast.Theorem(prop, proof)) -> Printf.sprintf "Theorem %s: %s\n%s\nQed." p (string_of_coq_prop (translate_proposition prop)) (string_of_coq_proof proof) 
 
 let x = Conjonction(True, False)
 let x = Disjonction(x, True) 

@@ -22,8 +22,8 @@ let rec parse_modules mds already_done = match mds with
 let parse_file ctx file =
   Printf.printf "\nWe are parsing %s.\n" file;
   let entries = P.(parse (input_from_file file)) in 
-  let ctx, l = List.fold_left_map (Parse.parse_entry file) ctx entries in
-  List.iter (fun x -> Printf.printf "%s\n" (Coq.string_of_decl x)) l;
+  let ctx = List.fold_left (Parse.parse_entry file) ctx entries in
+  List.iter (fun x -> Printf.printf "%s\n" (Coq.string_of_decl x)) ctx;
   Printf.printf "Finish with %s.\n\n" file;
   ctx
 

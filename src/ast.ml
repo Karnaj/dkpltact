@@ -19,7 +19,7 @@ type proposition =
   | Equality of name * element * element
   | PredicateCall of name * element list
 
-  and predicate = name * variable * proposition (*x: set, (P x) = (set, x, P)*)
+and predicate = name * variable * proposition (*x: set, (P x) = (set, x, P)*)
 
 type rule =  (* Some rules keep the hypothesis names avoiding the generation of fresh names. *)
   | T
@@ -40,11 +40,11 @@ type rule =  (* Some rules keep the hypothesis names avoiding the generation of 
   | Apply of name * term list (* Use another theorem, replace it by ImplElim and ForallElim. *)
   | Cut of proposition * proof * variable * proof
   | NNPP of proposition * proof
-  | EqElim of predicate * term * term * proof * proof
-  | EqElimR of predicate * term * term * proof * proof
-  | EqSym of predicate * term * term * proof * proof
-  | EqRefl of predicate * term * term * proof * proof 
-  | EqTrans of predicate * term * term * term * proof * proof * proof   
+  | EqElim of predicate * element * element * proof * proof
+  | EqElimR of predicate * element * element * proof * proof
+  | EqSym of predicate * element * element * proof * proof
+  | EqRefl of predicate * element * element * proof * proof 
+  | EqTrans of predicate * element * element * element * proof * proof * proof   
 
 and proof = rule (* proposition * rule *)
 
@@ -63,3 +63,16 @@ type declaration =
   | FunctionDef of string * (variable * name) list * name * element (* TODO *)
   | TheoremDef of string * proposition * proof
 
+
+
+type entry =
+  | Set
+  | Element of name
+  | PredicateSymbol of name list
+  | Predicate of (variable * name) list * proposition
+  | FunctionSymbol of name list * name
+  | Function of (variable * name) list * name * element
+  | Axiom of proposition
+  | Theorem of proposition * proof 
+
+type declarations = string * string * entry
