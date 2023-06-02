@@ -2,7 +2,8 @@ type name = string * string
 type variable = string 
 
 type element = 
-  | ElementCst of name
+  | ElementCst of variable
+  | GlobalElementCst of name
   | FunctionCall of name * element list
 
 type proposition =
@@ -23,19 +24,19 @@ and predicate = name * variable * proposition (*x: set, (P x) = (set, x, P)*)
 
 type rule =  (* Some rules keep the hypothesis names avoiding the generation of fresh names. *)
   | T
-  | FalseElim of proposition
+  | FalseElim of proof
   | Assumption of variable
   | GlobalAssumption of name (* To distinguish theorem and context hypothesis *)
   | AndIntro of proposition * proposition * proof * proof
-  | AndElim of variable * proposition * variable * proposition * proof * proposition * proof
+  | AndInd of variable * proposition * variable * proposition * proof * proposition * proof
   | OrIntroL of proposition * proposition * proof
   | OrIntroR of proposition * proposition * proof
-  | OrElim of variable * proposition * variable * proposition * proposition * variable * proof * variable * proof * proof 
+  | OrInd of proposition * proposition * proposition * variable * proof * variable * proof * proof 
   | ExIntro of predicate * element * proof 
-  | ExElim of predicate * proposition * proof * variable * variable * proof
+  | ExInd of predicate * proposition * proof * variable * variable * proof
   | ForallIntro of predicate * proof
   | ForallElim of predicate * proof * element
-  | ImplIntro of proposition * proof * proof 
+  | ImplIntro of variable * proposition * proof 
   | ImplElim of variable * proposition * proof * proof (* (H, A, Pimp, PA) Show A => B as H, and show A.*)
   | Apply of name * term list (* Use another theorem, replace it by ImplElim and ForallElim. *)
   | Cut of proposition * proof * variable * proof
@@ -51,9 +52,9 @@ and proof = rule (* proposition * rule *)
 and term = 
   | Element of element 
   | Proof of proof
-(*| Proposition of proposition *)
+  (*| Proposition of proposition *)
 
-type declaration = 
+type declaration_old = 
   | SetDecl of string
   | ElementDecl of string * name
   | FunctionDecl of string * name list * name
@@ -62,6 +63,7 @@ type declaration =
   | PredicateDef of string * (variable * name) list * proposition (* TODO *)
   | FunctionDef of string * (variable * name) list * name * element (* TODO *)
   | TheoremDef of string * proposition * proof
+
 
 
 
@@ -75,4 +77,35 @@ type entry =
   | Axiom of proposition
   | Theorem of proposition * proof 
 
+
 type declarations = string * string * entry
+
+
+(*
+type _type = 
+  | Set
+  | SetElement of name
+  | Predicate of name list
+  | Function of name list * name
+  | Proposition of proposition
+
+type declaration = name * _type * term option
+type context = (name * _type) list *)
+
+type _entry = 
+  | SetEntry 
+  | PredicateEntry of name list 
+  | FunctionEntry of name list * name
+  | TheoremEntry of proposition 
+  | ElementEntry of name
+
+type context_element = 
+  | SetC
+  | HypothesisC of proposition
+  | ElementC of name
+  | FunctionC of name list * name
+  | PredicateC of name list
+
+type global_context = name * context_element list
+type local_context = variable * context_element list 
+

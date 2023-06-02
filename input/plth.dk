@@ -1,0 +1,73 @@
+Prop : Type.
+
+def Prf : Prop -> Type.
+
+imp : Prop -> Prop -> Prop.
+
+[y, x] Prf (imp x y) --> (Prf x) -> Prf y.
+
+def Set : Type.
+
+def El : Set -> Type.
+
+forall : x:Set -> ((El x) -> Prop) -> Prop.
+
+[p, x] Prf (forall x p) --> z:(El x) -> Prf (p z).
+
+true : Prop.
+
+false : Prop.
+
+not : Prop -> Prop.
+
+and : Prop -> Prop -> Prop.
+
+or : Prop -> Prop -> Prop.
+
+ex : A:Set -> (__:(El A) -> Prop) -> Prop.
+
+eq : A:Set -> x:(El A) -> __:(El A) -> Prop.
+
+neq : A:Set -> x:(El A) -> __:(El A) -> Prop.
+
+[b, a, A] Prf (eq A a b) --> P:((El A) -> Prop) -> Prf (imp (P a) (P b)).
+
+[b, a, A] Prf (neq A a b) --> Prf(not (eq A a b)).
+
+[p0, x]
+  Prf (ex x p0) --> p:Prop -> (z:(El x) -> (Prf (p0 z)) -> Prf p) -> Prf p.
+
+[] Prf (false) --> p:Prop -> Prf p.
+
+[p0] Prf (not p0) --> (Prf p0) -> p:Prop -> Prf p.
+
+[p2, p1]
+  Prf (and p1 p2) --> p:Prop -> ((Prf p1) -> (Prf p2) -> Prf p) -> Prf p.
+
+[p2, p1]
+  Prf (or p1 p2)
+  -->
+  p:Prop -> ((Prf p1) -> Prf p) -> ((Prf p2) -> Prf p) -> Prf p.
+
+
+argList: Type.
+
+nil : argList.
+
+cons : Set -> argList -> argList. 
+
+def predicate : argList -> Type.
+
+[] predicate nil --> Prop.
+
+[s, q] predicate (cons s q) --> El s -> (predicate q).
+
+def function : argList -> Set -> Type.
+
+[s] function nil s --> El s.
+
+[s1, q, s2] function (cons s1 q) s2 --> El s1 -> (function q s2).
+
+classic: P: Prop -> Prf (or P (not P)).
+
+nnpp: p:Prop -> Prf (imp (not (not p)) p).

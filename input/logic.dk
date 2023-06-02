@@ -1,0 +1,151 @@
+def conj :
+  A:plth.Prop -> B:plth.Prop -> __:(plth.Prf A) -> __0:(plth.Prf B) -> plth.Prf (plth.and A B)
+  :=
+  A:plth.Prop =>
+  B:plth.Prop =>
+  __:(plth.Prf A) =>
+  __0:(plth.Prf B) => p:plth.Prop => f:((plth.Prf A) -> (plth.Prf B) -> plth.Prf p) => f __ __0.
+
+def or__introl :
+  A:plth.Prop -> B:plth.Prop -> __:(plth.Prf A) -> plth.Prf (plth.or A B)
+  :=
+  A:plth.Prop =>
+  B:plth.Prop =>
+  __:(plth.Prf A) =>
+  p:plth.Prop => f:((plth.Prf A) -> plth.Prf p) => g:((plth.Prf B) -> plth.Prf p) => f __.
+
+def or__intror :
+  A:plth.Prop -> B:plth.Prop -> __:(plth.Prf B) -> plth.Prf (plth.or A B)
+  :=
+  A:plth.Prop =>
+  B:plth.Prop =>
+  __:(plth.Prf B) =>
+  p:plth.Prop => f:((plth.Prf A) -> plth.Prf p) => g:((plth.Prf B) -> plth.Prf p) => g __.
+
+def ex__intro :
+  A:plth.Set ->
+  P:(__:(plth.El A) -> plth.Prop) -> x:(plth.El A) -> __:(plth.Prf (P x)) -> plth.Prf (plth.ex A P)
+  :=
+  A:plth.Set =>
+  P:(__:(plth.El A) -> plth.Prop) =>
+  x:(plth.El A) =>
+  __:(plth.Prf (P x)) => p:plth.Prop => f:(z:(plth.El A) -> (plth.Prf (P z)) -> plth.Prf p) => f x __.
+
+def false__ind :
+  P:plth.Prop -> f:(plth.Prf plth.false) -> plth.Prf P
+  :=
+  P:plth.Prop => f:(plth.Prf plth.false) => f P.
+
+def and__ind :
+  A:plth.Prop ->
+  B:plth.Prop ->
+  P:plth.Prop ->
+  f:(__:(plth.Prf A) -> __0:(plth.Prf B) -> plth.Prf P) -> a:(plth.Prf (plth.and A B)) -> plth.Prf P
+  :=
+  A:plth.Prop =>
+  B:plth.Prop =>
+  P:plth.Prop =>
+  f:(__:(plth.Prf A) -> __0:(plth.Prf B) -> plth.Prf P) => a:(plth.Prf (plth.and A B)) => a P f.
+
+def or__ind :
+  A:plth.Prop ->
+  B:plth.Prop ->
+  P:plth.Prop ->
+  f:(__:(plth.Prf A) -> plth.Prf P) ->
+  f0:(__:(plth.Prf B) -> plth.Prf P) -> o:(plth.Prf (plth.or A B)) -> plth.Prf P
+  :=
+  A:plth.Prop =>
+  B:plth.Prop =>
+  P:plth.Prop =>
+  f:(__:(plth.Prf A) -> plth.Prf P) =>
+  f0:(__:(plth.Prf B) -> plth.Prf P) => o:(plth.Prf (plth.or A B)) => o P f f0.
+
+def ex__ind :
+  A:plth.Set ->
+  P:(__:(plth.El A) -> plth.Prop) ->
+  P0:plth.Prop ->
+  f:(x:(plth.El A) -> __:(plth.Prf (P x)) -> plth.Prf P0) -> e:(plth.Prf (plth.ex A P)) -> plth.Prf P0
+  :=
+  A:plth.Set =>
+  P:(__:(plth.El A) -> plth.Prop) =>
+  P0:plth.Prop =>
+  f:(x:(plth.El A) -> __:(plth.Prf (P x)) -> plth.Prf P0) => e:(plth.Prf (plth.ex A P)) => e P0 f.
+
+def eq__ind :
+  A:plth.Set ->
+  x:(plth.El A) ->
+  P:(__:(plth.El A) -> plth.Prop) ->
+  f:(plth.Prf (P x)) -> y:(plth.El A) -> e:(plth.Prf (plth.eq A x y)) -> plth.Prf (P y)
+  :=
+  A:plth.Set =>
+  x:(plth.El A) =>
+  P:(__:(plth.El A) -> plth.Prop) =>
+  p:(plth.Prf (P x)) => y:(plth.El A) => pe:(plth.Prf (plth.eq A x y)) => pe P p.
+
+def eq__refl :
+  A:plth.Set -> x:(plth.El A) -> plth.Prf (plth.eq A x x)
+  :=
+  A:plth.Set => x:(plth.El A) => P:((plth.El A) -> plth.Prop) => H:(plth.Prf (P x)) => H.
+
+def eq__sym :
+  A:plth.Set ->
+  x:(plth.El A) -> y:(plth.El A) -> __:(plth.Prf (plth.eq A x y)) -> plth.Prf (plth.eq A y x)
+  :=
+  A:plth.Set =>
+  x:(plth.El A) =>
+  y:(plth.El A) =>
+  H:(plth.Prf (plth.eq A x y)) => eq__ind A x (y0:(plth.El A) => plth.eq A y0 x) (eq__refl A x) y H.
+
+def eq__ind__r :
+  A:plth.Set ->
+  x:(plth.El A) ->
+  P:(__:(plth.El A) -> plth.Prop) ->
+  __:(plth.Prf (P x)) -> y:(plth.El A) -> __0:(plth.Prf (plth.eq A y x)) -> plth.Prf (P y)
+  :=
+  A:plth.Set =>
+  x:(plth.El A) =>
+  P:(__:(plth.El A) -> plth.Prop) =>
+  H:(plth.Prf (P x)) =>
+  y:(plth.El A) =>
+  H0:(plth.Prf (plth.eq A y x)) => eq__ind A x (y0:(plth.El A) => P y0) H y (eq__sym A y x H0).
+
+def eq__trans :
+  A:plth.Set ->
+  x:(plth.El A) ->
+  y:(plth.El A) ->
+  z:(plth.El A) ->
+  __:(plth.Prf (plth.eq A x y)) -> __0:(plth.Prf (plth.eq A y z)) -> plth.Prf (plth.eq A x z)
+  :=
+  A:plth.Set =>
+  x:(plth.El A) =>
+  y:(plth.El A) =>
+  z:(plth.El A) =>
+  L:(plth.Prf (plth.eq A x y)) =>
+  R:(plth.Prf (plth.eq A y z)) =>
+  P:(__:(plth.El A) -> plth.Prop) => PX:(plth.Prf (P x)) => R P (L P PX).
+
+def and__ind2 :
+  A:plth.Prop ->
+  B:plth.Prop ->
+  P:plth.Prop ->
+  f:(__0:(plth.Prf B) -> plth.Prf P) -> a:(plth.Prf (plth.and A B)) -> plth.Prf P
+  := 
+  A:plth.Prop =>
+  B:plth.Prop =>
+  P:plth.Prop =>
+  f:(__0:(plth.Prf B) -> plth.Prf P) => a:(plth.Prf (plth.and A B)) => a P (p1 => p2 => f p2).
+
+
+def and__elim_left:
+  A:plth.Prop ->
+  B:plth.Prop ->
+  H: plth.Prf (plth.and A B) ->
+  plth.Prf A := 
+  A:plth.Prop => B:plth.Prop => H: plth.Prf (plth.and A B) => H A (p1 => p2 => p1).
+
+def and__elim_right:
+  A:plth.Prop ->
+  B:plth.Prop ->
+  H:plth.Prf (plth.and A B) ->
+  plth.Prf B := 
+  A:plth.Prop => B:plth.Prop => H: plth.Prf (plth.and A B) => H B (p1 => p2 => p2).

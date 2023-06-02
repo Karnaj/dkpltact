@@ -7,6 +7,8 @@ let id_name cst = B.string_of_ident @@ B.id cst
 let md_name cst = B.string_of_mident @@ B.md cst
 
 let pair_string_of_name name = (md_name name, id_name name)
+let string_of_name f = (md_name f) ^ "." ^ (id_name f)
+
 
 let name_eq_to name md id = md_name name = md && id_name name = id
 
@@ -34,6 +36,34 @@ let is_eq name = plth_const name "eq"
 let is_forall name = plth_const name "forall"
 let is_exists name = plth_const name "ex"
 
+
+
+let is_and_intro name = logic_const name "ex_intro"
+let is_or_intro_r name = logic_const name "or_intro_r"
+let is_or_intro_l name = logic_const name "or_intro_l"
+let is_ex_intro name = logic_const name "ex_intro"
+
+
+let is_false_elim name = logic_const name "false_elim"
+let is_or_elim name = logic_const name "or_elim"
+let is_ex_elim name = logic_const name "ex_elim"
+(*
+let is_and_elim_l name = logic_const name "and_elim_l"
+let is_and_elim_r name = logic_const name "and_elim_r"
+*) 
+
+let is_and_ind name = logic_const name "and_ind"
+(*
+let is_and_ind_l name = logic_const name "and_ind_l"
+let is_and_ind_r name = logic_const name "and_ind_r"
+
+let is_eq_ind name = logic_const name "eq_ind"
+let is_eq_ind_r name = logic_const name "eq_ind_r"
+let is_eq_refl name = logic_const name "eq_refl"
+let is_eq_trans name = logic_const name "eq_trans" *)
+
+let is_I name = plth_const name "I"
+
 let rec parse_set_list predicate_name args = match args with
   | T.Const (_, cst) when is_nil cst -> []
   | T.App (T.Const(_, cst), T.Const(_, set), [arg]) when is_cons cst -> 
@@ -42,14 +72,14 @@ let rec parse_set_list predicate_name args = match args with
 
 let rec parse_element x = match x with
 | T.Const (_, cst) -> 
-  Ast.ElementCst(pair_string_of_name cst)
+  Ast.GlobalElementCst(pair_string_of_name cst)
 | T.App (T.Const(_, f), t, args) ->
   let function_name = pair_string_of_name f in
   let args = List.map parse_element (t::args) in
   Ast.FunctionCall(function_name, args)
 | T.DB (_, id, _) ->
   let var_name =  B.string_of_ident id in
-  Ast.ElementCst("", var_name)
+  Ast.ElementCst(var_name)
 | _ -> failwith "Error, an element is either a constant or the application of a symbol function."
 
 
@@ -88,13 +118,124 @@ exception ParsingError of string
 
 
 
-let parse_proof p _ = match p with 
+let rec parse_proof p ctx locals = match p with
+  | T.Const (_, cst) when is_I cst ->
+      (Ast.T, Ast.True)
   | T.Const (_, cst) ->
-    Ast.GlobalAssumption(pair_string_of_name cst)
+    let var_name = pair_string_of_name cst in
+    begin match List.assoc_opt var_name ctx with
+      | None -> failwith (Printf.sprintf "%s not in context" (string_of_name cst))
+      | Some(Ast.HypothesisC(p)) -> (Ast.GlobalAssumption(var_name), p)
+      | _ -> failwith (Printf.sprintf "%s not a proposition in the context" (string_of_name cst))
+    end
   | T.DB (_, id, _) ->
     let var_name =  B.string_of_ident id in
-    Ast.Assumption(var_name)
-  | _ -> Printf.printf "Not yet implemented proof.\n"; Ast.T
+    begin match List.assoc_opt var_name locals with 
+      | None -> failwith (Printf.sprintf "%s not in context" var_name)
+      | Some(Ast.HypothesisC(p)) -> (Ast.Assumption(var_name), p)
+      | _ -> failwith (Printf.sprintf "%s not a proposition in the context" var_name)
+    end
+  | T.Lam(_, id, Some(T.App(T.Const(_, cst), T.Const(_, set), [])), t) when is_el cst ->
+      let id = B.string_of_ident id in
+      let set_name = pair_string_of_name set in
+      let locals = (id, Ast.ElementC(set_name))::locals in
+      let (prf, p) = parse_proof t ctx locals in 
+      let pred = (set_name, id, p) in 
+      (Ast.ForallIntro(pred, prf), Ast.Forall(pred))
+  | T.Lam(_, id, Some(T.App(T.Const(_, cst), statement, [])), t) when is_prf cst ->
+      let id = B.string_of_ident id in
+      let statement = parse_proposition statement in
+      let locals = (id, Ast.HypothesisC(statement))::locals in
+      let (prf, p) = parse_proof t ctx locals in 
+      (Ast.ImplIntro(id, statement, prf), Ast.Implication(statement, p))
+  
+  | T.App(T.Const(_, cst), a, b::aprf::bprf::rest) when is_and_intro cst ->
+    let a = parse_proposition a in
+    let b = parse_proposition b in
+    let (aprf, _) = parse_proof aprf ctx locals in
+    let (bprf, _) = parse_proof bprf ctx locals in  
+    parse_proof_with_other_args (Ast.AndIntro(a, b, aprf, bprf)) (Ast.Conjonction(a, b)) ctx locals rest
+
+  | T.App(T.Const(_, cst), b, a::bprf::rest) when is_or_intro_l cst ->
+      let a = parse_proposition a in
+      let b = parse_proposition b in
+      let (prf, _) = parse_proof bprf ctx locals in 
+      parse_proof_with_other_args (Ast.OrIntroL(a, b, prf)) (Ast.Disjonction(a, b)) ctx locals rest
+
+  | T.App(T.Const(_, cst), b, a::aprf::rest) when is_or_intro_r cst ->
+      let a = parse_proposition a in
+      let b = parse_proposition b in
+      let (prf, _) = parse_proof aprf ctx locals in 
+      parse_proof_with_other_args (Ast.OrIntroR(a, b, prf)) (Ast.Disjonction(a, b)) ctx locals rest
+
+  | T.App(T.Const(_, cst), T.Const(_, set), T.Lam(_, x, _,predicate)::wit::proof_ex::rest) when is_ex_intro cst ->
+    let id = B.string_of_ident x in
+    let set_name = pair_string_of_name set in
+    let p = parse_proposition predicate in
+    let wit = parse_element wit in
+    let (prf, _) = parse_proof proof_ex ctx locals in 
+    let pred = (set_name, id, p) in 
+    parse_proof_with_other_args (Ast.ExIntro(pred, wit, prf)) (Ast.Exists(pred)) ctx locals rest
+
+  | T.App(T.Const(_, cst), p1, proof_false::rest) when is_false_elim cst ->
+      let (prf, _) = parse_proof proof_false ctx locals in 
+      let p = parse_proposition p1 in
+      parse_proof_with_other_args (Ast.FalseElim(prf)) p ctx locals rest
+  
+  | T.App(T.Const(_, cst), p1, p2::p::T.Lam(_, h1, _, T.Lam(_, h2, _, proof_p))::proof_and::rest) when is_and_ind cst ->
+    let h1_name = B.string_of_ident h1 in
+    let h2_name = B.string_of_ident h2 in 
+    let p1 = parse_proposition p1 in 
+    let p2 = parse_proposition p2 in
+    let p = parse_proposition p in
+    let (proof_and, _) = parse_proof proof_and ctx locals in 
+    let (proof_p, _) = parse_proof proof_p ctx locals in
+    parse_proof_with_other_args (Ast.AndInd(h1_name, p1, h2_name, p2, proof_and, p, proof_p)) p ctx locals rest
+  
+  | T.App(T.Const(_, cst), p1, p2::p::T.Lam(_, h1, _, proof1)::T.Lam(_, h2, _, proof2)::proof_or::rest) when is_or_elim cst ->
+    let h1 = B.string_of_ident h1 in
+    let h2 = B.string_of_ident h2 in 
+    let p1 = parse_proposition p1 in 
+    let p2 = parse_proposition p2 in
+    let p = parse_proposition p in
+    let (proof1, _) = parse_proof proof1 ctx locals in
+    let (proof2, _) = parse_proof proof2 ctx locals in
+    let (proof_or, _) = parse_proof proof_or ctx locals in
+    parse_proof_with_other_args 
+      (Ast.OrInd(p1, p2, p, h1, proof1, h2, proof2, proof_or)) p ctx locals rest 
+
+  | T.App(T.Const(_, cst), T.Const(_, setn), T.Lam(_, x, _,predicate)::p::T.Lam(_, wit, _, T.Lam(_, h, _, proof_p))::proof_ex::rest) when is_ex_elim cst ->
+    let h = B.string_of_ident h in
+    let x = B.string_of_ident x in
+    let wit_name = B.string_of_ident wit in
+    let set = pair_string_of_name setn in
+    let pred = parse_proposition predicate in
+    let p = parse_proposition p in 
+    let (proof_p, _) = parse_proof proof_p ctx locals in 
+    let (proof_ex, _) = parse_proof proof_ex ctx locals in 
+    parse_proof_with_other_args  
+    (Ast.ExInd((set, x, pred), p, proof_ex, wit_name, h, proof_p)) p ctx locals rest
+  (* TODO 
+    eq_ind
+    eq_ind_r
+    eq_refl
+    eq_sym
+    eq_trans
+    and_ind_left
+    and_ind_right
+    and_elim_left
+    and_elim_right
+    or_ind_r
+    or_ind   
+  *)
+  | T.App(prf, arg, rest) ->
+    let (prf, p) = parse_proof prf ctx locals in
+    parse_proof_with_other_args prf p ctx locals (arg::rest)
+  | _ -> Printf.printf "Not yet implemented proof.\n"; (Ast.T, Ast.True)
+  (* Now, we just have to deal with applications... *)
+  (* Should we authorize connectives uses without elimination rules? Or
+    should we restrict their use in order to not have any proposition
+    as objects?*)
   (*
     For each connectives, there are two eliminations ways.
     The first one is the "correct" way. It uses the elimination symbol.
@@ -108,6 +249,36 @@ let parse_proof p _ = match p with
     we have to check if they correspond to some proofs used as a
     theorem.
   *)
+
+
+and parse_proof_with_other_args prf prop ctx locals args = match (prop, args) with
+  | (_, []) -> (prf, prop)
+  | (Ast.Implication(p, q), r::rest) ->
+      let (prfimp, _) = parse_proof r ctx locals in 
+      let prfq = Ast.ImplElim("", p, prf, prfimp) in
+      parse_proof_with_other_args prfq q ctx locals rest
+  | (Ast.Forall(pred), r::rest) ->
+    let x = parse_element r in
+    let prfelim = Ast.ForallElim(pred, prf, x) in 
+    let (_, id, p) = pred in
+    parse_proof_with_other_args prfelim (instantiate id p x) ctx locals rest 
+  | _ -> failwith "booh"
+
+and replace_el id el t = match el with 
+  | Ast.ElementCst(x) when id = x -> el
+  | Ast.FunctionCall(f, l) -> Ast.FunctionCall(f, List.map (fun el -> replace_el id el t) l)
+  | _ -> el
+
+and instantiate id p t = match p with
+  | Ast.Implication(p, q) -> Ast.Implication (instantiate id p t, instantiate id q t)
+  | Ast.Conjonction(p, q) -> Ast.Conjonction (instantiate id p t, instantiate id q t)
+  | Ast.Disjonction(p, q) -> Ast.Disjonction (instantiate id p t, instantiate id q t)
+  | Ast.Negation(p) -> Ast.Negation(instantiate id p t)
+  | Ast.Equality(set, x, y) -> Ast.Equality(set, replace_el id x t, replace_el id y t)
+  | Ast.PredicateCall(f, l) -> Ast.PredicateCall(f, List.map (fun el -> replace_el id el t) l)
+  | Forall(set, y, p) when id <> y -> Forall(set, y, instantiate id p t)
+  | Exists(set, y, p) when id <> y -> Exists(set, y, instantiate id p t)
+  | _ -> p
 
 
 let rec parse_predicate_definition te = match te with 
@@ -125,51 +296,61 @@ let rec parse_function_definition te = match te with
 
 let parse_basic_declaration name decl = match decl with 
   | T.Const(_, cst) when is_set cst -> 
-      Ast.Set
+      (Ast.Set, Ast.SetC)
   | T.App (T.Const(_, cst), T.Const (_, set), []) when is_el cst ->
-      Ast.Element(pair_string_of_name set)
+      let set = pair_string_of_name set in
+      (Ast.Element(set), Ast.ElementC(set))
   | T.App (T.Const(_, cst), args, []) when is_predicate cst ->
-      Ast.PredicateSymbol(parse_set_list name args)
+      let args = parse_set_list name args in
+      (Ast.PredicateSymbol(args), Ast.PredicateC(args))
   | T.App (T.Const(_, cst), args, [T.Const(_, return)]) when is_function cst ->
-      Ast.FunctionSymbol(parse_set_list name args, pair_string_of_name return)
+      let args = parse_set_list name args in
+      let ret_type = pair_string_of_name return in
+      (Ast.FunctionSymbol(args, ret_type), Ast.FunctionC(args, ret_type))
   | T.App (T.Const(_, cst), statement, []) when is_prf cst ->
       let statement = parse_proposition statement in
-      Ast.Axiom(statement)
+      (Ast.Axiom(statement), Ast.HypothesisC(statement))
   | _ -> 
     raise (ParsingError "We can only declare sets, elements, predicates, functions and poofs (axioms).")
 
 
-let parse_basic_definition ty te = match ty with
+let parse_basic_definition ty te ctx = match ty with
   | T.App (T.Const(_, cst), _, []) when is_predicate cst ->
       let args, te = parse_predicate_definition te in
-      Ast.Predicate(args, te)
+      let args_type = List.map snd args in
+      (Ast.Predicate(args, te), Ast.PredicateC(args_type))
   | T.App (T.Const(_, cst), _, [ret]) when is_function cst ->
       let args, te = parse_function_definition te in
       let ret_type = begin match ret with
         | T.Const(_, cst) -> pair_string_of_name cst
         | _ -> failwith "Return type of a function should be a set."
       end in
-      Ast.Function(args, ret_type, te)
+      let args_type = List.map snd args in
+      (Ast.Function(args, ret_type, te), Ast.FunctionC(args_type, ret_type))
   | T.App (T.Const(_, cst), proposition, []) when is_prf cst ->
-      Ast.Theorem(parse_proposition proposition, parse_proof ty [])
+      let prop = parse_proposition proposition in
+      let (proof, _) = parse_proof te ctx [] in
+      (Ast.Theorem(prop, proof), Ast.HypothesisC(prop))
   | _ -> 
     failwith "Error, we can only define functions, predicate and theorems."  
 
-let parse_entry mname ctx e = match e with
+let parse_entry mname ctx e = 
+  begin match e with
   | E.Decl(_, id, _, _, decl) ->
       let name = B.string_of_ident id in
-      (*let _ = Printf.printf "Parsing declaration %s...\n" name in *)
-      let e = parse_basic_declaration name decl in
+      (*let _ = Printf.printf "Parsing declaration %s.%s...\n" mname name in *)
+      let (e, ce) = parse_basic_declaration name decl in
       (*let _ = Printf.printf "Declaration %s parsed\n" name in *)
-      (mname, name, e)::ctx
+      (((mname, name), e), ((mname, name), ce))
   | E.Def(_, id, _, _, Some(ty), te) -> 
       let name = B.string_of_ident id in 
-      let _ = Printf.printf "Parsing definition %s...\n" name in
-      let e = parse_basic_definition ty te in
-      let _ = Printf.printf "Definition %s parsed\n" name in 
-      (mname, name, e)::ctx
+     (* let _ = Printf.printf "Parsing definition %s...\n" name in *)
+      let (e, ce) = parse_basic_definition ty te ctx in
+     (* let _ = Printf.printf "Definition %s parsed\n" name in  *)
+     (((mname, name), e), ((mname, name), ce))
   | _ -> 
       raise (ParsingError "Error, can only translate definitions and declarations, rewrite rules and commands are not accepted.")  
+  end
 
 (*let _ = begin match el with
   | Ast.AxiomDecl(_, p) -> Printf.printf "It is the following axiom: %s.\n" (Coq.string_of_coq_prop (Coq.translate_proposition p))
@@ -282,15 +463,15 @@ match prf with
       let global_proof = compute_proof t in
       let statement_proof = compute_proof statement_prf in
       Ast.Cut(statement, hypothesis_name, statement_proof, global_proof)
-      | T.App (cst, t1, [t2]) when is_const_eq_to "imp" cst ->
+| T.App (cst, t1, [t2]) when is_const_eq_to "imp" cst ->
         Ast.Implication(parse_proposition t1, parse_proposition t2)
-      | T.App (cst, t1, [t2]) when is_const_eq_to "and" cst ->
+| T.App (cst, t1, [t2]) when is_const_eq_to "and" cst ->
         Ast.Conjonction(parse_proposition t1, parse_proposition t2)
-      | T.App (cst, t1, [t2]) when is_const_eq_to "or" cst ->
+| T.App (cst, t1, [t2]) when is_const_eq_to "or" cst ->
         Ast.Disjonction(parse_proposition t1, parse_proposition t2)
-      | T.App (cst, T.Const(_, set), [t1; t2]) when is_const_eq_to "eq" cst ->
+| T.App (cst, T.Const(_, set), [t1; t2]) when is_const_eq_to "eq" cst ->
        Ast.Equality(separate_const_best set, parse_element t1, parse_element t2)
-      | T.App (cst, t, []) when is_const_eq_to "not" cst ->
+| T.App (cst, t, []) when is_const_eq_to "not" cst ->
         Ast.Negation(parse_element t)
 | T.App(th, p1, [p2; p; T.Lam(_, h1, _, T.Lam(_, h2, _, proof_p)); proof_and]) when is_const_logic_eq_to "and__ind" th->
     let h1_name = B.string_of_ident h1 in
