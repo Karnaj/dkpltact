@@ -38,29 +38,33 @@ let is_exists name = plth_const name "ex"
 
 
 
-let is_and_intro name = logic_const name "ex_intro"
+let is_and_intro name = logic_const name "conj"
 let is_or_intro_r name = logic_const name "or_intro_r"
 let is_or_intro_l name = logic_const name "or_intro_l"
 let is_ex_intro name = logic_const name "ex_intro"
 
 
-let is_false_elim name = logic_const name "false_elim"
+let is_false_elim name = logic_const name "false__ind"
 let is_or_elim name = logic_const name "or_elim"
 let is_ex_elim name = logic_const name "ex_elim"
-(*
+
 let is_and_elim_l name = logic_const name "and_elim_l"
 let is_and_elim_r name = logic_const name "and_elim_r"
-*) 
-
 let is_and_ind name = logic_const name "and_ind"
+let is_and_ind_r name = logic_const name "and_ind_r"
+let is_and_ind_l name = logic_const name "and_ind_l"
 (*
 let is_and_ind_l name = logic_const name "and_ind_l"
 let is_and_ind_r name = logic_const name "and_ind_r"
+*)
+
 
 let is_eq_ind name = logic_const name "eq_ind"
+
 let is_eq_ind_r name = logic_const name "eq_ind_r"
 let is_eq_refl name = logic_const name "eq_refl"
-let is_eq_trans name = logic_const name "eq_trans" *)
+let is_eq_sym name = logic_const name "eq_sym"
+let is_eq_trans name = logic_const name "eq_trans"
 
 let is_I name = plth_const name "I"
 
@@ -215,18 +219,85 @@ let rec parse_proof p ctx locals = match p with
     let (proof_ex, _) = parse_proof proof_ex ctx locals in 
     parse_proof_with_other_args  
     (Ast.ExInd((set, x, pred), p, proof_ex, wit_name, h, proof_p)) p ctx locals rest
-  (* TODO 
-    eq_ind
-    eq_ind_r
-    eq_refl
-    eq_sym
-    eq_trans
-    and_ind_left
-    and_ind_right
-    and_elim_left
-    and_elim_right
-    or_ind_r
-    or_ind   
+  | T.App(T.Const(_, cst), T.Const(_, set_name), x::T.Lam(_, h1, _, predicate)::proof::y::proof_eq::rest) when is_eq_ind cst ->
+      let h1 = B.string_of_ident h1 in
+      let pred = parse_proposition predicate in 
+      let set = pair_string_of_name set_name in 
+      let x = parse_element x in 
+      let y = parse_element y in 
+      let (proof, p) = parse_proof proof ctx locals in
+      let (proof_eq, _) = parse_proof proof_eq ctx locals in 
+      parse_proof_with_other_args 
+      (Ast.EqElim((set, h1, pred), x, y, proof, proof_eq)) p ctx locals rest
+  | T.App(T.Const(_, cst), T.Const(_, set_name), x::T.Lam(_, h1, _, predicate)::proof::y::proof_eq::rest) when is_eq_ind_r cst ->
+        let h1 = B.string_of_ident h1 in
+        let pred = parse_proposition predicate in 
+        let set = pair_string_of_name set_name in 
+        let x = parse_element x in 
+        let y = parse_element y in 
+        let (proof, p) = parse_proof proof ctx locals in
+        let (proof_eq, _) = parse_proof proof_eq ctx locals in 
+        parse_proof_with_other_args 
+        (Ast.EqElimR((set, h1, pred), x, y, proof, proof_eq)) p ctx locals rest
+  | T.App(T.Const(_, cst), T.Const(_, set_name), x::rest) when is_eq_refl cst ->
+      let set = pair_string_of_name set_name in 
+      let x = parse_element x in
+      parse_proof_with_other_args 
+      (Ast.EqRefl(set, x)) (Ast.Equality(set, x, x)) ctx locals rest
+  | T.App(T.Const(_, cst), T.Const(_, set_name), x::y::proof_eq::rest) when is_eq_sym cst ->
+        let set = pair_string_of_name set_name in 
+        let x = parse_element x in 
+        let y = parse_element y in
+        let (proof_eq, _) = parse_proof proof_eq ctx locals in 
+        parse_proof_with_other_args 
+          (Ast.EqSym(set, x, y, proof_eq)) 
+          (Ast.Equality(set, y, x)) ctx locals rest
+  | T.App(T.Const(_, cst), T.Const(_, set_name), x::y::z::proof_eq1::proof_eq2::rest) when is_eq_trans cst ->
+    let set = pair_string_of_name set_name in 
+    let x = parse_element x in 
+    let y = parse_element y in
+    let z = parse_element z in
+    let (proof_eq1, _) = parse_proof proof_eq1 ctx locals in
+    let (proof_eq2, _) = parse_proof proof_eq2 ctx locals in 
+    parse_proof_with_other_args
+      (Ast.EqTrans(set, x, y, z, proof_eq1, proof_eq2)) 
+      (Ast.Equality(set, x, z)) ctx locals rest 
+  | T.App(T.Const(_, cst), p, q::r::T.Lam(_, h, _, proof_r)::proof_and::rest) when is_and_ind_r cst ->
+    let p = parse_proposition p in 
+    let q = parse_proposition q in
+    let r = parse_proposition r in
+    let h = B.string_of_ident h in
+    let (proof_r, _) = parse_proof proof_r ctx locals in
+    let (proof_and, _) = parse_proof proof_and ctx locals in 
+    parse_proof_with_other_args
+      (Ast.AndIndRight(p, h, q, proof_and, r, proof_r)) 
+      r ctx locals rest
+  | T.App(T.Const(_, cst), p, q::r::T.Lam(_, h, _, proof_r)::proof_and::rest) when is_and_ind_l cst ->
+    let p = parse_proposition p in 
+    let q = parse_proposition q in
+    let r = parse_proposition r in
+    let h = B.string_of_ident h in
+    let (proof_r, _) = parse_proof proof_r ctx locals in
+    let (proof_and, _) = parse_proof proof_and ctx locals in 
+    parse_proof_with_other_args
+      (Ast.AndIndLeft(h, p, q, proof_and, r, proof_r)) 
+      r ctx locals rest
+  | T.App(T.Const(_, cst), p, q::proof::rest) when is_and_elim_l cst ->
+        let p = parse_proposition p in 
+        let q = parse_proposition q in
+        let (proof, _) = parse_proof proof ctx locals in
+        parse_proof_with_other_args
+          (Ast.AndElimLeft(p, q, proof)) 
+          p ctx locals rest
+  | T.App(T.Const(_, cst), p, q::proof::rest) when is_and_elim_r cst ->
+    let p = parse_proposition p in 
+    let q = parse_proposition q in
+    let (proof, _) = parse_proof proof ctx locals in
+    parse_proof_with_other_args
+      (Ast.AndElimRight(p, q, proof)) 
+      q ctx locals rest 
+  (* Problème ici, pourquoir prendre une fonction en paramètre et pas juste une
+     preuve de p => r. Pareil pour and_ind, ex_elim et or_elim.
   *)
   | T.App(prf, arg, rest) ->
     let (prf, p) = parse_proof prf ctx locals in
@@ -262,6 +333,10 @@ and parse_proof_with_other_args prf prop ctx locals args = match (prop, args) wi
     let prfelim = Ast.ForallElim(pred, prf, x) in 
     let (_, id, p) = pred in
     parse_proof_with_other_args prfelim (instantiate id p x) ctx locals rest 
+  (*
+    Had to manage other type of propositions, only, propositional variables/constants
+    could not be used to proof another propositions.     
+  *)
   | _ -> failwith "booh"
 
 and replace_el id el t = match el with 

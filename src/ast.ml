@@ -29,6 +29,10 @@ type rule =  (* Some rules keep the hypothesis names avoiding the generation of 
   | GlobalAssumption of name (* To distinguish theorem and context hypothesis *)
   | AndIntro of proposition * proposition * proof * proof
   | AndInd of variable * proposition * variable * proposition * proof * proposition * proof
+  | AndIndRight of proposition * variable * proposition * proof * proposition * proof
+  | AndIndLeft of variable * proposition * proposition * proof * proposition * proof
+  | AndElimRight of proposition * proposition * proof
+  | AndElimLeft of proposition * proposition * proof
   | OrIntroL of proposition * proposition * proof
   | OrIntroR of proposition * proposition * proof
   | OrInd of proposition * proposition * proposition * variable * proof * variable * proof * proof 
@@ -43,9 +47,9 @@ type rule =  (* Some rules keep the hypothesis names avoiding the generation of 
   | NNPP of proposition * proof
   | EqElim of predicate * element * element * proof * proof
   | EqElimR of predicate * element * element * proof * proof
-  | EqSym of predicate * element * element * proof * proof
-  | EqRefl of predicate * element * element * proof * proof 
-  | EqTrans of predicate * element * element * element * proof * proof * proof   
+  | EqSym of name * element * element * proof
+  | EqRefl of name * element 
+  | EqTrans of name * element * element * element * proof * proof 
 
 and proof = rule (* proposition * rule *)
 
