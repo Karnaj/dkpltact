@@ -68,8 +68,9 @@ type coq_proof =
 
 
 and*) 
-let rec translate_proof p = p and
-translate_element x = match x with
+let rec translate_proof p = p 
+
+and translate_element x = match x with
   | Ast.ElementCst(x) -> ElementCst(x)
   | Ast.GlobalElementCst(x) -> GlobalElementCst(x)
   | Ast.FunctionCall(f, l) -> FunctionCall(f, List.map translate_element l)
@@ -86,7 +87,7 @@ and translate_proposition prop = match prop with
     end
   | Ast.Exists((typ, x, prop)) -> 
       begin match translate_proposition prop with
-        | Exists(var_list, prop) -> Forall((typ, x)::var_list, prop)
+        | Exists(var_list, prop) -> Exists((typ, x)::var_list, prop)
         | prop -> Exists([(typ, x)], prop)
       end
   | Ast.Implication(p, q) -> Implication(translate_proposition p, translate_proposition q)

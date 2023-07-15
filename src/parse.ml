@@ -87,6 +87,8 @@ let rec parse_element x = match x with
 | _ -> failwith "Error, an element is either a constant or the application of a symbol function."
 
 
+
+
 (* No need of the context since we suppose the Dedukti code typechecks. *)
 let rec parse_proposition p = match p with
   | T.Const (_, cst) when is_true cst -> 
@@ -120,6 +122,19 @@ let rec parse_proposition p = match p with
 
 exception ParsingError of string
 
+
+
+let rec parse_predicate_definition te = match te with 
+  | T.Lam(_, id, Some(T.App(T.Const(_, cst), T.Const(_, set), _)), t) when is_el cst -> 
+      let (args, t) = parse_predicate_definition t in
+      ((B.string_of_ident id, pair_string_of_name set)::args, t)
+  | t -> ([], parse_proposition t)
+
+let rec parse_function_definition te = match te with 
+  | T.Lam(_, id, Some(T.App(T.Const(_, cst), T.Const(_, set), _)), t) when is_el cst -> 
+      let (args, t) = parse_function_definition t in
+      ((B.string_of_ident id, pair_string_of_name set)::args, t)
+  | t -> ([], parse_element t)
 
 
 let rec parse_proof p ctx locals = match p with
@@ -296,7 +311,7 @@ let rec parse_proof p ctx locals = match p with
     parse_proof_with_other_args
       (Ast.AndElimRight(p, q, proof)) 
       q ctx locals rest 
-  (* Problème ici, pourquoir prendre une fonction en paramètre et pas juste une
+  (* Problème ici, pourquoi prendre une fonction en paramètre et pas juste une
      preuve de p => r. Pareil pour and_ind, ex_elim et or_elim.
   *)
   | T.App(prf, arg, rest) ->
@@ -333,11 +348,19 @@ and parse_proof_with_other_args prf prop ctx locals args = match (prop, args) wi
     let prfelim = Ast.ForallElim(pred, prf, x) in 
     let (_, id, p) = pred in
     parse_proof_with_other_args prfelim (instantiate id p x) ctx locals rest 
+  | (Ast.Equality(set, x, y), T.Lam(_, z, _,predicate)::prf_x::rest) -> 
+    let id = B.string_of_ident z in
+    let p = parse_proposition predicate in
+    let pred = (set, id, p) in
+    let (prf_x, _) = parse_proof prf_x ctx locals in
+    let prf_y = Ast.EqElim(pred, x, y, prf_x, prf) in
+    parse_proof_with_other_args prf_y (instantiate id p y) ctx locals rest
+  (* Le cas où pas de prf_x = prouver P(a) => P(b) *)
   (*
     Had to manage other type of propositions, only, propositional variables/constants
     could not be used to proof another propositions.     
   *)
-  | _ -> failwith "booh"
+  | _ -> failwith "booh, not yet implemented"
 
 and replace_el id el t = match el with 
   | Ast.ElementCst(x) when id = x -> el
@@ -355,18 +378,6 @@ and instantiate id p t = match p with
   | Exists(set, y, p) when id <> y -> Exists(set, y, instantiate id p t)
   | _ -> p
 
-
-let rec parse_predicate_definition te = match te with 
-  | T.Lam(_, id, Some(T.App(T.Const(_, cst), T.Const(_, set), _)), t) when is_el cst -> 
-      let (args, t) = parse_predicate_definition t in
-      ((B.string_of_ident id, pair_string_of_name set)::args, t)
-  | t -> ([], parse_proposition t)
-
-let rec parse_function_definition te = match te with 
-  | T.Lam(_, id, Some(T.App(T.Const(_, cst), T.Const(_, set), _)), t) when is_el cst -> 
-      let (args, t) = parse_function_definition t in
-      ((B.string_of_ident id, pair_string_of_name set)::args, t)
-  | t -> ([], parse_element t)
 
 
 let parse_basic_declaration name decl = match decl with 
