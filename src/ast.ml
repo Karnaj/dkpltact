@@ -18,6 +18,7 @@ type proposition =
   | Disjonction of proposition * proposition
   | Negation of proposition
   | Equality of name * element * element
+  | NotEquality of name * element * element
   | PredicateCall of name * element list
 
 and predicate = name * variable * proposition (*x: set, (P x) = (set, x, P)*)
@@ -42,7 +43,6 @@ type rule =  (* Some rules keep the hypothesis names avoiding the generation of 
   | ForallElim of predicate * proof * element
   | ImplIntro of variable * proposition * proof 
   | ImplElim of variable * proposition * proof * proof (* (H, A, Pimp, PA) Show A => B as H, and show A.*)
-  | Apply of name * term list (* Use another theorem, replace it by ImplElim and ForallElim. *)
   | Cut of proposition * proof * variable * proof
   | NNPP of proposition * proof
   | EqElim of predicate * element * element * proof * proof
@@ -50,13 +50,15 @@ type rule =  (* Some rules keep the hypothesis names avoiding the generation of 
   | EqSym of name * element * element * proof
   | EqRefl of name * element 
   | EqTrans of name * element * element * element * proof * proof 
+  | Apply of variable * term list (* Use another theorem, replace it by ImplElim and ForallElim. *)
+  | ApplyTheorem of name * term list
 
 and proof = rule (* proposition * rule *)
 
 and term = 
-  | Element of element 
-  | Proof of proof
-  (*| Proposition of proposition *)
+  | TElement of element 
+  | TProof of proof
+  (* | Proposition of proposition *)
 
 type declaration_old = 
   | SetDecl of string

@@ -71,8 +71,7 @@ let main input_file =
   let _ = Api.Files.add_path "input" in
   parse_module ([], []) input_file
 
-let _ = main "euclidean__axioms" (*"input/euclid/lemma__equalitysymmetric.dk" *) (*"euclidean__axioms"*)
-
+let _ = main "lemma__congruencesymmetric" (*"input/euclid/lemma__equalitysymmetric.dk" *) (*"euclidean__axioms"*)
 
 
 
