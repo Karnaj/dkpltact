@@ -239,15 +239,32 @@ type proof_step = Command of string | Step of proof_step list
 
 let coq_string_of_prop p = string_of_coq_prop (translate_proposition p)
 
+let symbol_list = [|'-'; '+'; '*'|]
 
-let rec coq_string_of_string_step deep proof = match proof with
-  | Command(str) -> Printf.sprintf "%s%s\n" deep str 
-  | Step(list) -> 
-    let str = Printf.sprintf "%s{" deep in 
-    let str = List.fold_left (fun str -> fun step -> 
-        Printf.sprintf "%s\n%s\n" str (coq_string_of_string_step (Printf.sprintf "%s  " deep) step)
-      ) str list in 
-    Printf.sprintf  "%s%s}\n" str deep
+let get_symbol i = 
+  let bullet = symbol_list.(i mod 3) in
+  String.make (1 + i / 3) bullet
+
+let rec coq_string_of_string_step_bullet deep i proof = match proof with
+  | Command(str) -> Printf.sprintf "%s%s" deep str 
+  | Step([]) -> ""
+  | Step(fst::list) -> 
+    let symbol = get_symbol i in 
+    let str = Printf.sprintf "%s%s %s" deep symbol (coq_string_of_string_step_bullet "" i fst) in 
+    let deep = (Printf.sprintf "%s%s" deep (String.make (1 + (String.length symbol)) ' ')) in 
+    let f = fun step -> coq_string_of_string_step_bullet deep (i + 1) step in
+    let str = List.fold_left (fun str step -> Printf.sprintf "%s\n%s" str (f step)) str list in 
+    str
+
+
+let rec coq_string_of_string_step_braces deep proof = match proof with
+  | Command(str) -> Printf.sprintf "%s%s" deep str 
+  | Step([]) -> ""
+  | Step(fst::list) -> 
+    let f = fun step -> coq_string_of_string_step_braces (Printf.sprintf "%s  " deep) step in
+    let str = Printf.sprintf "%s{\n%s  %s" deep deep (coq_string_of_string_step_braces "" fst) in 
+    let str = List.fold_left (fun str step -> Printf.sprintf "%s\n%s" str (f step)) str list in 
+    Printf.sprintf "%s\n%s}" str deep
 
 
 let rec get_all_intros args p = match p with 
@@ -255,7 +272,7 @@ let rec get_all_intros args p = match p with
       get_all_intros (x::args) proof
   | Ast.ImplIntro(h, _, proof) -> 
       get_all_intros (h::args) proof
-  | _ -> args, p
+  | _ -> List.rev args, p
 
 let rec string_of_term t = match t with 
   | Ast.TProof(GlobalAssumption(h)) -> string_of_name h 
@@ -442,11 +459,11 @@ and coq_string_step_of_proof p ctx =
     [Command(strf); Step(prf); Step([Command(str)])]  *)
 
 | Ast.Apply(th, args) ->
-  let str = Printf.sprintf "apply @%s%s." th (List.fold_left (fun str arg -> Printf.sprintf "%s %s" str (string_of_term arg)) "" args) in
+  let str = Printf.sprintf "apply (@%s%s)." th (List.fold_left (fun str arg -> Printf.sprintf "%s %s" str (string_of_term arg)) "" args) in
   [Command(str)]
 
 | Ast.ApplyTheorem(th, args) -> 
-  let str = Printf.sprintf "apply %s%s." (string_of_name th) (List.fold_left (fun str arg -> Printf.sprintf "%s %s" str (string_of_term arg)) "" args) in
+  let str = Printf.sprintf "apply (@%s%s)." (string_of_name th) (List.fold_left (fun str arg -> Printf.sprintf "%s %s" str (string_of_term arg)) "" args) in
   [Command(str)]
 
 | Ast.Cut(p, prfp, h, prf) ->
@@ -473,7 +490,7 @@ and coq_string_step_of_proof p ctx =
 let string_of_coq_proof proof = 
   let list = coq_string_step_of_proof proof [] in
   List.fold_left (fun str -> fun step -> 
-    Printf.sprintf "%s%s" str (coq_string_of_string_step "  " step)) "" list
+    Printf.sprintf "%s\n%s" str (coq_string_of_string_step_bullet "  " 0 step)) "" list
 
 
 
@@ -485,4 +502,4 @@ let string_of_decl decl = match decl with
 | ((_, p), Ast.Axiom(prop)) -> Printf.sprintf "Axiom %s: %s." p (string_of_coq_prop (translate_proposition prop))
 | ((_, f), Ast.Predicate(args, prop)) -> Printf.sprintf "Definition %s%s := %s." f (string_of_args args false) (string_of_coq_prop (translate_proposition prop))
 | ((_, f), Ast.Function(args, _, te)) -> Printf.sprintf "Definition %s%s := %s." f (string_of_args args false) (string_of_coq_element (translate_element te))
-| ((_, p), Ast.Theorem(prop, proof)) -> Printf.sprintf "Theorem %s: %s.\n%sQed." p (string_of_coq_prop (translate_proposition prop)) (string_of_coq_proof (translate_proof proof)) 
+| ((_, p), Ast.Theorem(prop, proof)) -> Printf.sprintf "Theorem %s: %s.\n%s\nQed." p (string_of_coq_prop (translate_proposition prop)) (string_of_coq_proof (translate_proof proof)) 

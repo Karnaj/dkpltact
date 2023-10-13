@@ -457,9 +457,12 @@ let rec parse_proof set_index name_assoc p ctx locals = match p with
 
   | T.App(prf, arg, rest) ->
         let (prf, p) = parse_proof set_index name_assoc prf ctx locals in
-        let _ = Printf.printf "Ici pour %d\n" (List.length rest) in
-        parse_proof_with_other_args set_index name_assoc prf p ctx locals (arg::rest)
-
+        begin match p with 
+          | Ast.Implication(p, q) when p = q->
+              let (prf, p) = parse_proof set_index name_assoc arg ctx locals in 
+              parse_proof_with_other_args set_index name_assoc prf p ctx locals rest
+          | _ -> parse_proof_with_other_args set_index name_assoc prf p ctx locals (arg::rest)
+  end
   (* Problème ici, pourquoi prendre une fonction en paramètre et pas juste une
      preuve de p => r. Pareil pour and_ind, ex_elim et or_elim.
   *)
@@ -500,16 +503,21 @@ let rec parse_proof set_index name_assoc p ctx locals = match p with
 and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args = match (prop, args) with
   | (_, []) -> (prf, prop)
   | (Ast.Implication(p, q), r::rest) ->
-    let (prfp, _) = parse_proof set_index name_assoc r ctx locals in
       begin match prf with
         | Ast.Apply(th, l) -> 
-          parse_proof_with_other_args set_index name_assoc 
-            (Ast.Apply(th, List.rev (Ast.TProof(prfp)::l))) 
-            q ctx locals rest
+          let (prfp, _) = parse_proof set_index name_assoc r ctx locals in
+          let (newprop, set_index) = get_new_name ("", "H") set_index in
+          let (prfresult, result) = parse_proof_with_other_args set_index name_assoc 
+            (Ast.Apply(th, List.rev (Ast.TProof(Ast.Assumption(newprop))::(List.rev l)))) 
+            q ctx locals rest in 
+          (Ast.Cut(p, prfp, newprop, prfresult), result) 
         | Ast.ApplyTheorem(th, l) ->  
-          parse_proof_with_other_args set_index name_assoc 
-            (Ast.ApplyTheorem(th, List.rev (Ast.TProof(prfp)::l))) 
-            q ctx locals rest
+          let (prfp, _) = parse_proof set_index name_assoc r ctx locals in
+          let (newprop, set_index) = get_new_name ("", "H") set_index in
+          let (prfresult, result) = parse_proof_with_other_args set_index name_assoc 
+            (Ast.ApplyTheorem(th, List.rev (Ast.TProof(Ast.Assumption(newprop))::(List.rev l)))) 
+            q ctx locals rest in 
+          (Ast.Cut(p, prfp, newprop, prfresult), result) 
         | _ -> 
           let newprop, set_index = get_new_name ("", "H") set_index in
           let prfresult, result = parse_proof_with_other_args set_index name_assoc 
@@ -524,15 +532,13 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args = 
     begin match prf with
         | Ast.Apply(th, l) -> 
           parse_proof_with_other_args set_index name_assoc 
-            (Ast.Apply(th, List.rev (Ast.TElement(x)::l)))
+            (Ast.Apply(th, List.rev (Ast.TElement(x)::(List.rev l))))
             (instantiate id p x) ctx locals rest
         | Ast.ApplyTheorem(th, l) ->  
           parse_proof_with_other_args set_index name_assoc 
-            (Ast.ApplyTheorem(th, List.rev (Ast.TElement(x)::l))) 
+            (Ast.ApplyTheorem(th, List.rev (Ast.TElement(x)::(List.rev l)))) 
             (instantiate id p x) ctx locals rest
         | _ -> 
-
-      let _ = Printf.printf "Là pour pour\n"  in
           let newprop, set_index = get_new_name ("", "H") set_index in
           let prfresult, result = parse_proof_with_other_args set_index name_assoc 
           (Ast.Apply(newprop, []))
