@@ -648,6 +648,6 @@ let string_of_decl decl =
         (string_of_args args false)
         (string_of_coq_element (translate_element te))
   | (_, p), Ast.Theorem (prop, proof) ->
-      Printf.sprintf "Theorem %s: %s.\n%s\nQed." p
+      Printf.sprintf "Theorem %s: %s.%s\nQed." p
         (string_of_coq_prop (translate_proposition prop))
         (string_of_coq_proof (translate_proof proof))
