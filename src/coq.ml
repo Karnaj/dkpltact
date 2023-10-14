@@ -538,29 +538,31 @@ and coq_string_step_of_proof p ctx =
              "" args)
       in
       Command str :: prf
-  | Ast.ForallElim (_, Ast.Assumption h, x) ->
-      let str =
-        Printf.sprintf "apply %s with (%s)." h
-          (string_of_coq_element (translate_element x))
-      in
-      [ Command str ]
-  | Ast.ForallElim (_, Ast.GlobalAssumption h, x) ->
-      let str =
-        Printf.sprintf "apply %s with (%s)." (string_of_name h)
-          (string_of_coq_element (translate_element x))
-      in
-      [ Command str ]
-  | Ast.ForallElim (pred, proof, x) ->
-      let strf =
-        Printf.sprintf "assert (%s) as HForall."
-          (string_of_coq_prop (translate_proposition (Ast.Forall pred)))
-      in
-      let prf = coq_string_step_of_proof proof ctx in
-      let str =
-        Printf.sprintf "apply HForall with (%s)."
-          (string_of_coq_element (translate_element x))
-      in
-      [ Command strf; Step prf; Step [ Command str ] ]
+  (*| Ast.ForallElim (_, Ast.Assumption h, x) ->
+        let str =
+          Printf.sprintf "apply %s with (%s)." h
+            (string_of_coq_element (translate_element x))
+        in
+        [ Command str ]
+    | Ast.ForallElim (_, Ast.GlobalAssumption h, x) ->
+        let str =
+          Printf.sprintf "apply %s with (%s)." (string_of_name h)
+            (string_of_coq_element (translate_element x))
+        in
+        [ Command str ]
+    | Ast.ForallElim (pred, proof, x) ->
+        let strf =
+          Printf.sprintf "assert (%s) as HForall."
+            (string_of_coq_prop (translate_proposition (Ast.Forall pred)))
+        in
+        let prf = coq_string_step_of_proof proof ctx in
+        let str =
+          Printf.sprintf "apply HForall with (%s)."
+            (string_of_coq_element (translate_element x))
+        in
+        [ Command strf; Step prf; Step [ Command str ] ]*)
+  | Ast.ForallElim (_, _, _) ->
+      failwith "No more elimination of forall; replaced by application."
   | Ast.ImplIntro (h, _, proof) ->
       let args, proof = get_all_intros [ h ] proof in
       let prf = coq_string_step_of_proof proof ctx in
@@ -571,27 +573,15 @@ and coq_string_step_of_proof p ctx =
              "" args)
       in
       Command str :: prf
-  | Ast.ImplElim (_, _, Ast.Assumption h, prfp) ->
-      let str = Printf.sprintf "apply %s." h in
+  | Ast.ImplElim (_, _, _, _) ->
+      failwith "No more elimination of implication; replaced by application."
+  | Ast.Cut (p, prfp, h, prf) ->
+      let strcut =
+        Printf.sprintf "assert (%s) as %s." (coq_string_of_prop p) h
+      in
       let strp = coq_string_step_of_proof prfp ctx in
-      Command str :: strp
-  | Ast.ImplElim (_, _, Ast.GlobalAssumption h, prfp) ->
-      let str = Printf.sprintf "apply %s." (string_of_name h) in
-      let strp = coq_string_step_of_proof prfp ctx in
-      Command str :: strp
-  | Ast.ImplElim (_, _, _, prfp) ->
-      let str = Printf.sprintf "apply DD." in
-      let strp = coq_string_step_of_proof prfp ctx in
-      Command str :: strp
-      (*
-| Ast.ImplElim(_, Ast.GlobalAssumption(h), x) ->
-    let str = Printf.sprintf "apply %s with (%s)." (string_of_name h) (string_of_coq_element (translate_element x)) in
-    [Command(str)]
-| Ast.ImplElim(pred, proof, x) ->
-    let strf = Printf.sprintf "assert (%s) as HForall." (string_of_coq_prop (translate_proposition (Ast.Forall pred))) in
-    let prf = coq_string_step_of_proof proof ctx in
-    let str = Printf.sprintf "apply HForall with (%s)." (string_of_coq_element (translate_element x)) in
-    [Command(strf); Step(prf); Step([Command(str)])]  *)
+      let str = coq_string_step_of_proof prf ctx in
+      [ Command strcut; Step strp; Step str ]
   | Ast.Apply (th, args) ->
       let str =
         Printf.sprintf "apply (@%s%s)." th
@@ -608,14 +598,26 @@ and coq_string_step_of_proof p ctx =
              "" args)
       in
       [ Command str ]
-  | Ast.Cut (p, prfp, h, prf) ->
-      let strcut =
-        Printf.sprintf "assert (%s) as %s." (coq_string_of_prop p) h
+  | Ast.NNPP (_, proof) ->
+      let proof = coq_string_step_of_proof proof ctx in
+      let str = Printf.sprintf "apply NNPP." in
+      Command str :: proof
+  | Ast.EqRefl (_, _) -> [ Command "reflexivity." ]
+  | Ast.EqSym (_, _, _, proof) ->
+      let proof = coq_string_step_of_proof proof ctx in
+      let str = Printf.sprintf "symmetry." in
+      Command str :: proof
+  | Ast.EqTrans (_, _, y, _, proof1, proof2) ->
+      let proof1 = coq_string_step_of_proof proof1 ctx in
+      let proof2 = coq_string_step_of_proof proof2 ctx in
+      let str =
+        Printf.sprintf "transitivity %s."
+          (string_of_coq_element (translate_element y))
       in
-      let strp = coq_string_step_of_proof prfp ctx in
-      let str = coq_string_step_of_proof prf ctx in
-      [ Command strcut; Step strp; Step str ]
-  | _ -> [ Command "apply I." ]
+      Command str :: Step proof1 :: [ Step proof2 ]
+  | Ast.EqElim (_, _, _, _, _) -> failwith "eq elim not yet treated"
+  | Ast.EqElimR (_, _, _, _, _) -> failwith "eq elim not yet treated"
+(*| _ -> [ Command "apply I." ] *)
 
 let string_of_coq_proof proof =
   let list = coq_string_step_of_proof proof [] in

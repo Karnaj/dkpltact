@@ -61,19 +61,6 @@ and replace_var x t = function
   | Ast.Apply (f, l) -> Ast.Apply (f, List.map (replace_var_in_term x t) l)
   | Ast.ApplyTheorem (f, l) ->
       Ast.ApplyTheorem (f, List.map (replace_var_in_term x t) l)
-(*
-
-  | ImplElim of variable * proposition * proof * proof (* (H, A, Pimp, PA) Show A => B as H, and show A.*)
-  | Cut of proposition * proof * variable * proof
-  | NNPP of proposition * proof
-  | EqElim of predicate * element * element * proof * proof
-  | EqElimR of predicate * element * element * proof * proof
-  | EqSym of name * element * element * proof
-  | EqRefl of name * element 
-  | EqTrans of name * element * element * element * proof * proof 
-  | Apply of variable * term list (* Use another theorem, replace it by ImplElim and ForallElim. *)
-  | ApplyTheorem of name * term list
-*)
 
 let rec simplify_proof p =
   match p with
