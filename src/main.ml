@@ -1,7 +1,6 @@
 module Files = Api.Files
 module P = Parsers.Parser
 
-
 (*
 let rec parse_modules mds already_done = match mds with
   | [] -> already_done, []
@@ -17,35 +16,59 @@ let rec parse_modules mds already_done = match mds with
     end
 *)
 
+let test file out ctx entry =
+  let entry, context_entry = Parse.parse_entry file ctx entry in
 
-let test file ctx entry = 
-  let (entry, context_entry) = Parse.parse_entry file ctx entry in
-  Printf.printf "%s\n" (Coq.string_of_decl entry);
-  context_entry::ctx
-
+  Printf.fprintf out "%s\n\n" (Coq.string_of_decl entry);
+  context_entry :: ctx
 
 let parse_file ctx file =
+  let oc = open_out ("output/" ^ file ^ ".v") in
   Printf.printf "\nWe are parsing %s.\n" file;
-  let entries = P.(parse (input_from_file ("input/euclid/" ^ file ^ ".dk"))) in 
-  let ctx = List.fold_left (test file) ctx entries in
+  let entries = P.(parse (input_from_file ("input/euclid/" ^ file ^ ".dk"))) in
+  let ctx = List.fold_left (test file oc) ctx entries in
   Printf.printf "Finish with %s.\n\n" file;
+  close_out oc;
   ctx
 
+let dep_of_file file =
+  let entries = P.(parse (input_from_file ("input/euclid/" ^ file ^ ".dk"))) in
+  let deps =
+    List.fold_left
+      (fun qset e -> Extras.StrSet.union qset (Deps.dep_of_entry [] e))
+      Extras.StrSet.empty entries
+  in
+  Extras.StrSet.elements deps
 
 let rec parse_module dones_and_ctx file =
-  let (dones, ctx) = dones_and_ctx in
-  let env = Api.Env.init (Parsers.Parser.input_from_file ("input/euclid/" ^ file ^ ".dk")) in
-  let md = Api.Env.get_name env in 
-  let _ =  Printf.printf "We want to parse %s.\n" (Kernel.Basic.string_of_mident md) in
-  let deps = Deps.deps_of_md ~transitive:false md in
-  let deps = Kernel.Basic.MidentSet.elements deps in
-  let deps = List.map Kernel.Basic.string_of_mident deps in
-  let deps_files = List.filter (fun x -> x <> "plth" && x <> "logic" && x <> file && (not (List.mem x dones))) deps in
-  let dones = List.append dones deps_files in
-  let (dones, ctx) = List.fold_left parse_module (dones, ctx) deps_files in
-  let ctx = parse_file ctx file in
-  (dones, ctx)
-
+  let dones, todo, ctx = dones_and_ctx in
+  if List.mem file dones && not (List.mem file todo) then (dones, todo, ctx)
+  else
+    let env =
+      Api.Env.init
+        (Parsers.Parser.input_from_file ("input/euclid/" ^ file ^ ".dk"))
+    in
+    let md = Api.Env.get_name env in
+    let _ =
+      Printf.printf "We want to parse %s.\n" (Kernel.Basic.string_of_mident md)
+    in
+    let deps = dep_of_file file in
+    let deps_files =
+      List.filter
+        (fun x ->
+          x <> "plth" && x <> "logic" && x <> file && not (List.mem x dones))
+        deps
+    in
+    List.iter (Printf.printf "%s  ") deps_files;
+    Printf.printf "\n";
+    let todo = List.append todo deps_files in
+    let dones = file :: dones in
+    let todo = List.filter (fun x -> x != file) todo in
+    let dones, todo, ctx =
+      List.fold_left parse_module (dones, todo, ctx) deps_files
+    in
+    let ctx = parse_file ctx file in
+    (dones, todo, ctx)
 
 (*
 let main input_file =
@@ -65,18 +88,18 @@ let main input_file =
   List.iter (fun x -> Printf.printf "Require %s.\n\n" x) deps
 *)
 
-let main input_file = 
+let main input_file =
   let _ = Printf.printf "\nBeginning.\n" in
   let _ = Api.Files.add_path "input/euclid" in
   let _ = Api.Files.add_path "input" in
-  parse_module ([], []) input_file
+  parse_module ([], [ input_file ], []) input_file
 
-let _ = main "lemma__congruencesymmetric" (*"input/euclid/lemma__equalitysymmetric.dk" *) (*"euclidean__axioms"*)
+let _ = main "proposition__30"
+(*"input/euclid/lemma__equalitysymmetric.dk" *)
+(*"euclidean__axioms"*)
 
-
-
-  (*let deps = Deps.dep_of_entry [md; Kernel.Basic.mk_mident "plth"] x in *)
+(*let deps = Deps.dep_of_entry [md; Kernel.Basic.mk_mident "plth"] x in *)
 
 (* Have some tests
-Format.printf "%a OK" Api.Pp.Default.print_entry e;
+   Format.printf "%a OK" Api.Pp.Default.print_entry e;
 *)

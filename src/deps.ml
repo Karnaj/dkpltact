@@ -51,33 +51,3 @@ let dep_of_entry (mds : mident list) e =
   List.fold_left
     (fun qset md -> StrSet.remove (string_of_mident md) qset)
     (dep_of_entry e) mds
-
-let deps_of_md md =
-  let files = List.map Api.Files.get_file md in
-  let htbl = Api.Processor.handle_files files Api.Processor.Dependencies in
-  Hashtbl.fold
-    (fun _ { Api.Dep.deps; _ } acc -> Kernel.Basic.MidentSet.union acc deps)
-    htbl Kernel.Basic.MidentSet.empty
-
-let deps_of_md ?(transitive = false) md =
-  if not transitive then deps_of_md [ md ]
-  else
-    (* Holds the result *)
-    let depr = ref MidentSet.empty in
-    (* Modules whose dependencies have been computed *)
-    let comp = ref MidentSet.empty in
-    let rec loop mds =
-      if MidentSet.is_empty mds then ()
-      else
-        let m = MidentSet.choose mds in
-        let mds = MidentSet.remove m mds in
-        (* Dependencies of [m] are being computed. *)
-        comp := MidentSet.add m !comp;
-        let deps = deps_of_md [ m ] in
-        depr := MidentSet.union !depr deps;
-        (* Don't recompute values that have already been computed *)
-        let deps = MidentSet.diff deps !comp in
-        loop (MidentSet.union mds deps)
-    in
-    loop (MidentSet.singleton md);
-    !depr

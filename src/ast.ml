@@ -65,8 +65,10 @@ type rule =
     (* (H, A, Pimp, PA) Show A => B as H, and show A.*)
   | Cut of proposition * proof * variable * proof
   | NNPP of proposition * proof
-  | EqElim of predicate * element * element * proof * proof
-  | EqElimR of predicate * element * element * proof * proof
+  | EqElim of
+      predicate * element * element * variable * proof * variable * proof
+  | EqElimR of
+      predicate * element * element * variable * proof * variable * proof
   | EqSym of name * element * element * proof
   | EqRefl of name * element
   | EqTrans of name * element * element * element * proof * proof

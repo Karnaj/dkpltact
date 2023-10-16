@@ -44,10 +44,12 @@ and replace_var x t = function
       let prf = if h = x then prf else replace_var x t prf in
       Ast.Cut (p, prfp, h, prf)
   | Ast.NNPP (p, prf) -> Ast.NNPP (p, replace_var x t prf)
-  | Ast.EqElim (pred, y, z, prfeq, prf) ->
-      Ast.EqElim (pred, y, z, replace_var x t prfeq, replace_var x t prf)
-  | Ast.EqElimR (pred, y, z, prfeq, prf) ->
-      Ast.EqElimR (pred, y, z, replace_var x t prfeq, replace_var x t prf)
+  | Ast.EqElim (pred, y, z, hprf, prfeq, heq, prf) ->
+      Ast.EqElim
+        (pred, y, z, hprf, replace_var x t prfeq, heq, replace_var x t prf)
+  | Ast.EqElimR (pred, y, z, hprf, prfeq, heq, prf) ->
+      Ast.EqElimR
+        (pred, y, z, hprf, replace_var x t prfeq, heq, replace_var x t prf)
   | Ast.EqSym (set, y, z, prf) -> Ast.EqSym (set, y, z, replace_var x t prf)
   | Ast.EqRefl (set, y) -> Ast.EqRefl (set, y)
   | Ast.EqTrans (set, u, v, w, prf1, prf2) ->

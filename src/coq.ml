@@ -290,7 +290,7 @@ let get_symbol i =
   let bullet = symbol_list.(i mod 3) in
   String.make (1 + (i / 3)) bullet
 
-let rec coq_string_of_string_step_bullet deep i proof =
+let rec indent_coq_string_of_string_step_bullet deep i proof =
   match proof with
   | Command str -> Printf.sprintf "%s%s" deep str
   | Step [] -> ""
@@ -298,10 +298,31 @@ let rec coq_string_of_string_step_bullet deep i proof =
       let symbol = get_symbol i in
       let str =
         Printf.sprintf "%s%s %s" deep symbol
-          (coq_string_of_string_step_bullet "" i fst)
+          (indent_coq_string_of_string_step_bullet "" i fst)
       in
       let deep =
         Printf.sprintf "%s%s" deep (String.make (1 + String.length symbol) ' ')
+      in
+      let f step = indent_coq_string_of_string_step_bullet deep (i + 1) step in
+      let str =
+        List.fold_left
+          (fun str step -> Printf.sprintf "%s\n%s" str (f step))
+          str list
+      in
+      str
+
+let rec coq_string_of_string_step_bullet deep i proof =
+  match proof with
+  | Command str -> Printf.sprintf "%s%s" deep str
+  | Step [] -> ""
+  | Step (fst :: list) ->
+      let symbol = get_symbol i in
+      let str =
+        Printf.sprintf "%s %s" symbol
+          (coq_string_of_string_step_bullet "" i fst)
+      in
+      let deep =
+        Printf.sprintf "%s" (String.make (1 + String.length symbol) ' ')
       in
       let f step = coq_string_of_string_step_bullet deep (i + 1) step in
       let str =
@@ -509,12 +530,12 @@ and coq_string_step_of_proof p ctx =
       let str1 = coq_string_step_of_proof prf ctx in
       Command str :: str1
   | Ast.ExInd (_, _, Ast.Assumption x, wit_name, h, proof_p) ->
-      let str = Printf.sprintf "destruct %s as [%s %s].\n" x wit_name h in
+      let str = Printf.sprintf "destruct %s as [%s %s]." x wit_name h in
       let str1 = coq_string_step_of_proof proof_p ctx in
       Command str :: str1
   | Ast.ExInd (_, _, Ast.GlobalAssumption x, wit_name, h, proof_p) ->
       let str =
-        Printf.sprintf "destruct %s as [%s %s].\n" (string_of_name x) wit_name h
+        Printf.sprintf "destruct %s as [%s %s]." (string_of_name x) wit_name h
       in
       let str1 = coq_string_step_of_proof proof_p ctx in
       Command str :: str1
@@ -524,7 +545,7 @@ and coq_string_step_of_proof p ctx =
           (string_of_coq_prop (translate_proposition (Ast.Exists pred)))
           h
       in
-      let str = Printf.sprintf "destruct %s as [%s %s].\n" h wit_name h in
+      let str = Printf.sprintf "destruct %s as [%s %s]." h wit_name h in
       let str1 = coq_string_step_of_proof proof_p ctx in
       let strexists = coq_string_step_of_proof prfexists ctx in
       [ Command stror; Step strexists; Step (Command str :: str1) ]
@@ -615,9 +636,19 @@ and coq_string_step_of_proof p ctx =
           (string_of_coq_element (translate_element y))
       in
       Command str :: Step proof1 :: [ Step proof2 ]
-  | Ast.EqElim (_, _, _, _, _) -> failwith "eq elim not yet treated"
-  | Ast.EqElimR (_, _, _, _, _) -> failwith "eq elim not yet treated"
-(*| _ -> [ Command "apply I." ] *)
+  | Ast.EqElim (_, _, _, _, _, _, _) ->
+      (*
+      cut (P x) as H.
+      - prf
+      - cut x = y as Heq.
+        + prfeq.
+        + rewrite Heq in H.
+          now rewrite Heq.
+    *)
+      [ Command "apply I." ]
+      (*failwith "eq elim not yet treated" *)
+  | Ast.EqElimR (_, _, _, _, _, _, _) -> [ Command "apply I." ]
+(*failwith "eq elim not yet treated" *)
 
 let string_of_coq_proof proof =
   let list = coq_string_step_of_proof proof [] in
