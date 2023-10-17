@@ -815,7 +815,7 @@ cut x = y as H
         (Ast.Negation (Ast.Equality (set, x, y)))
         ctx locals args
   | _ ->
-      let _ = Printf.printf "%s\n" (Coq.coq_string_of_prop prop) in
+      (*let _ = Printf.printf "%s\n" (Coq.coq_string_of_prop prop) in *)
       failwith "booh, not yet implemented"
 
 and replace_el id el t =

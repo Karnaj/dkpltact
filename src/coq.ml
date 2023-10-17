@@ -636,7 +636,33 @@ and coq_string_step_of_proof p ctx =
           (string_of_coq_element (translate_element y))
       in
       Command str :: Step proof1 :: [ Step proof2 ]
-  | Ast.EqElim (_, _, _, _, _, _, _) ->
+  | Ast.EqElim ((_, id, pred), x, y, hprf, prf, heq, prfeq) ->
+      let prf = coq_string_step_of_proof prf ctx in
+      let prfeq = coq_string_step_of_proof prfeq ctx in
+      let cuteq = Printf.sprintf "assert (%s = %s) as %s." (string_of_coq_element (translate_element x)) (string_of_coq_element (translate_element y)) heq in
+      let cut = Printf.sprintf "assert (%s) as %s." (coq_string_of_prop (Parse.instantiate id pred x)) hprf in
+      let rew1 = Printf.sprintf "rewrite %s in %s." heq hprf in
+      let rew2 = Printf.sprintf "now rewrite %s." heq in
+      [ (Command cut) ; 
+        (Step prf) ; 
+        Step [ (Command cuteq); 
+          (Step prfeq) ; Step( [(Command rew1); (Command rew2)])
+        ] 
+      ]
+
+  | Ast.EqElimR ((_, id, pred), x, y, hprf, prf, heq, prfeq) ->
+    let prf = coq_string_step_of_proof prf ctx in
+    let prfeq = coq_string_step_of_proof prfeq ctx in
+    let cuteq = Printf.sprintf "assert (%s = %s) as %s." (string_of_coq_element (translate_element y)) (string_of_coq_element (translate_element x)) heq in
+    let cut = Printf.sprintf "assert (%s) as %s." (coq_string_of_prop (Parse.instantiate id pred x)) hprf in
+    let rew1 = Printf.sprintf "rewrite %s in %s." heq hprf in
+    let rew2 = Printf.sprintf "now rewrite %s." heq in
+    [ (Command cut) ; 
+      (Step prf) ; 
+      Step [ (Command cuteq); 
+        (Step prfeq) ; Step( [(Command rew1); (Command rew2)])
+      ] 
+    ]
       (*
       cut (P x) as H.
       - prf
@@ -645,10 +671,6 @@ and coq_string_step_of_proof p ctx =
         + rewrite Heq in H.
           now rewrite Heq.
     *)
-      [ Command "apply I." ]
-      (*failwith "eq elim not yet treated" *)
-  | Ast.EqElimR (_, _, _, _, _, _, _) -> [ Command "apply I." ]
-(*failwith "eq elim not yet treated" *)
 
 let string_of_coq_proof proof =
   let list = coq_string_step_of_proof proof [] in
