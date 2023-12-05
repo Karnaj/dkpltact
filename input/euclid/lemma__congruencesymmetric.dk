@@ -1,0 +1,26 @@
+thm lemma__congruencesymmetric :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.imp (euclidean__axioms.Cong B C A D) (euclidean__axioms.Cong A D B C))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.Cong B C A D)) =>
+  (H0:(plth.Prf (euclidean__axioms.Cong B C B C)) =>
+   (H1:(plth.Prf (euclidean__axioms.Cong A D B C)) => H1)
+     (euclidean__axioms.cn__congruencetransitive A D B C B C H H0))
+    (euclidean__axioms.cn__congruencereflexive B C).
+

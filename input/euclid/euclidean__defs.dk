@@ -1,0 +1,717 @@
+def Out :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and (euclidean__axioms.BetS X A C) (euclidean__axioms.BetS X A B)).
+
+def Lt :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and (euclidean__axioms.BetS C X D) (euclidean__axioms.Cong C X A B)).
+
+def Midpoint :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  plth.and (euclidean__axioms.BetS A B C) (euclidean__axioms.Cong A B B C).
+
+def CongA :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  a:(plth.El euclidean__axioms.Point) =>
+  b:(plth.El euclidean__axioms.Point) =>
+  c:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (U:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (V:(plth.El euclidean__axioms.Point) =>
+        plth.ex
+          euclidean__axioms.Point
+          (u:(plth.El euclidean__axioms.Point) =>
+           plth.ex
+             euclidean__axioms.Point
+             (v:(plth.El euclidean__axioms.Point) =>
+              plth.and
+                (Out B A U)
+                (plth.and
+                   (Out B C V)
+                   (plth.and
+                      (Out b a u)
+                      (plth.and
+                         (Out b c v)
+                         (plth.and
+                            (euclidean__axioms.Cong B U b u)
+                            (plth.and
+                               (euclidean__axioms.Cong B V b v)
+                               (plth.and
+                                  (euclidean__axioms.Cong U V u v)
+                                  (euclidean__axioms.nCol A B C))))))))))).
+
+def AdjacentAngle :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  plth.and (plth.eq euclidean__axioms.Point B E) (plth.and (euclidean__axioms.BetS A B F) (Out B D C)).
+
+def VA :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (plth.eq euclidean__axioms.Point B E)
+    (plth.and (euclidean__axioms.BetS A B D) (euclidean__axioms.BetS C B F)).
+
+def Supp :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) => plth.and (Out B C D) (euclidean__axioms.BetS A B F).
+
+def Per :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and
+       (euclidean__axioms.BetS A B X)
+       (plth.and
+          (euclidean__axioms.Cong A B X B)
+          (plth.and (euclidean__axioms.Cong A C X C) (plth.neq euclidean__axioms.Point B C)))).
+
+def Perp__at :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))))
+  :=
+  P:(plth.El euclidean__axioms.Point) =>
+  Q:(plth.El euclidean__axioms.Point) =>
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and
+       (euclidean__axioms.Col P Q C)
+       (plth.and (euclidean__axioms.Col A B C) (plth.and (euclidean__axioms.Col A B X) (Per X C P)))).
+
+def Perp :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  P:(plth.El euclidean__axioms.Point) =>
+  Q:(plth.El euclidean__axioms.Point) =>
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  plth.ex euclidean__axioms.Point (X:(plth.El euclidean__axioms.Point) => Perp__at P Q A B X).
+
+def InAngle :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  P:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (Y:(plth.El euclidean__axioms.Point) =>
+        plth.and (Out B A X) (plth.and (Out B C Y) (euclidean__axioms.BetS X P Y)))).
+
+def OS :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  P:(plth.El euclidean__axioms.Point) =>
+  Q:(plth.El euclidean__axioms.Point) =>
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (U:(plth.El euclidean__axioms.Point) =>
+        plth.ex
+          euclidean__axioms.Point
+          (V:(plth.El euclidean__axioms.Point) =>
+           plth.and
+             (euclidean__axioms.Col A B U)
+             (plth.and
+                (euclidean__axioms.Col A B V)
+                (plth.and
+                   (euclidean__axioms.BetS P U X)
+                   (plth.and
+                      (euclidean__axioms.BetS Q V X)
+                      (plth.and (euclidean__axioms.nCol A B P) (euclidean__axioms.nCol A B Q)))))))).
+
+def IO :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (euclidean__axioms.BetS A B C)
+    (plth.and
+       (euclidean__axioms.BetS A B D)
+       (plth.and (euclidean__axioms.BetS A C D) (euclidean__axioms.BetS B C D))).
+
+def isosceles :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  plth.and (euclidean__axioms.Triangle A B C) (euclidean__axioms.Cong A B A C).
+
+def Cut :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (euclidean__axioms.BetS A E B)
+    (plth.and
+       (euclidean__axioms.BetS C E D)
+       (plth.and (euclidean__axioms.nCol A B C) (euclidean__axioms.nCol A B D))).
+
+def LtA :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (U:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (X:(plth.El euclidean__axioms.Point) =>
+        plth.ex
+          euclidean__axioms.Point
+          (V:(plth.El euclidean__axioms.Point) =>
+           plth.and
+             (euclidean__axioms.BetS U X V)
+             (plth.and (Out E D U) (plth.and (Out E F V) (CongA A B C D E X)))))).
+
+def TG :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and (euclidean__axioms.BetS A B X) (plth.and (euclidean__axioms.Cong B X C D) (Lt E F A X))).
+
+def TT :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons
+                   euclidean__axioms.Point
+                   (plth.cons
+                      euclidean__axioms.Point
+                      (plth.cons
+                         euclidean__axioms.Point
+                         (plth.cons euclidean__axioms.Point plth.nil))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  G:(plth.El euclidean__axioms.Point) =>
+  H:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and
+       (euclidean__axioms.BetS E F X)
+       (plth.and (euclidean__axioms.Cong F X G H) (TG A B C D E X))).
+
+def RT :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (Y:(plth.El euclidean__axioms.Point) =>
+        plth.ex
+          euclidean__axioms.Point
+          (Z:(plth.El euclidean__axioms.Point) =>
+           plth.ex
+             euclidean__axioms.Point
+             (U:(plth.El euclidean__axioms.Point) =>
+              plth.ex
+                euclidean__axioms.Point
+                (V:(plth.El euclidean__axioms.Point) =>
+                 plth.and (Supp X Y U V Z) (plth.and (CongA A B C X Y U) (CongA D E F V Y Z))))))).
+
+def Meet :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and
+       (plth.neq euclidean__axioms.Point A B)
+       (plth.and
+          (plth.neq euclidean__axioms.Point C D)
+          (plth.and (euclidean__axioms.Col A B X) (euclidean__axioms.Col C D X)))).
+
+def CR :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and (euclidean__axioms.BetS A X B) (euclidean__axioms.BetS C X D)).
+
+def TP :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (plth.neq euclidean__axioms.Point A B)
+    (plth.and
+       (plth.neq euclidean__axioms.Point C D)
+       (plth.and (plth.not (Meet A B C D)) (OS C D A B))).
+
+def Par :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (U:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (V:(plth.El euclidean__axioms.Point) =>
+        plth.ex
+          euclidean__axioms.Point
+          (u:(plth.El euclidean__axioms.Point) =>
+           plth.ex
+             euclidean__axioms.Point
+             (v:(plth.El euclidean__axioms.Point) =>
+              plth.ex
+                euclidean__axioms.Point
+                (X:(plth.El euclidean__axioms.Point) =>
+                 plth.and
+                   (plth.neq euclidean__axioms.Point A B)
+                   (plth.and
+                      (plth.neq euclidean__axioms.Point C D)
+                      (plth.and
+                         (euclidean__axioms.Col A B U)
+                         (plth.and
+                            (euclidean__axioms.Col A B V)
+                            (plth.and
+                               (plth.neq euclidean__axioms.Point U V)
+                               (plth.and
+                                  (euclidean__axioms.Col C D u)
+                                  (plth.and
+                                     (euclidean__axioms.Col C D v)
+                                     (plth.and
+                                        (plth.neq euclidean__axioms.Point u v)
+                                        (plth.and
+                                           (plth.not (Meet A B C D))
+                                           (plth.and
+                                              (euclidean__axioms.BetS U X v)
+                                              (euclidean__axioms.BetS u X V))))))))))))))).
+
+def SumA :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons
+                   euclidean__axioms.Point
+                   (plth.cons
+                      euclidean__axioms.Point
+                      (plth.cons
+                         euclidean__axioms.Point
+                         (plth.cons
+                            euclidean__axioms.Point
+                            (plth.cons euclidean__axioms.Point plth.nil)))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  P:(plth.El euclidean__axioms.Point) =>
+  Q:(plth.El euclidean__axioms.Point) =>
+  R:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.and (CongA A B C P Q X) (plth.and (CongA D E F X Q R) (euclidean__axioms.BetS P X R))).
+
+def PG :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) => plth.and (Par A B C D) (Par A D B C).
+
+def SQ :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (euclidean__axioms.Cong A B C D)
+    (plth.and
+       (euclidean__axioms.Cong A B B C)
+       (plth.and
+          (euclidean__axioms.Cong A B D A)
+          (plth.and (Per D A B) (plth.and (Per A B C) (plth.and (Per B C D) (Per C D A)))))).
+
+def RE :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (Per D A B)
+    (plth.and (Per A B C) (plth.and (Per B C D) (plth.and (Per C D A) (CR A C B D)))).
+
+def RC :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons
+                   euclidean__axioms.Point
+                   (plth.cons
+                      euclidean__axioms.Point
+                      (plth.cons
+                         euclidean__axioms.Point
+                         (plth.cons euclidean__axioms.Point plth.nil))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  a:(plth.El euclidean__axioms.Point) =>
+  b:(plth.El euclidean__axioms.Point) =>
+  c:(plth.El euclidean__axioms.Point) =>
+  d:(plth.El euclidean__axioms.Point) =>
+  plth.and
+    (RE A B C D)
+    (plth.and
+       (RE a b c d)
+       (plth.and (euclidean__axioms.Cong A B a b) (euclidean__axioms.Cong B C b c))).
+
+def ER :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons
+          euclidean__axioms.Point
+          (plth.cons
+             euclidean__axioms.Point
+             (plth.cons
+                euclidean__axioms.Point
+                (plth.cons
+                   euclidean__axioms.Point
+                   (plth.cons
+                      euclidean__axioms.Point
+                      (plth.cons
+                         euclidean__axioms.Point
+                         (plth.cons euclidean__axioms.Point plth.nil))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  a:(plth.El euclidean__axioms.Point) =>
+  b:(plth.El euclidean__axioms.Point) =>
+  c:(plth.El euclidean__axioms.Point) =>
+  d:(plth.El euclidean__axioms.Point) =>
+  plth.ex
+    euclidean__axioms.Point
+    (X:(plth.El euclidean__axioms.Point) =>
+     plth.ex
+       euclidean__axioms.Point
+       (Y:(plth.El euclidean__axioms.Point) =>
+        plth.ex
+          euclidean__axioms.Point
+          (Z:(plth.El euclidean__axioms.Point) =>
+           plth.ex
+             euclidean__axioms.Point
+             (U:(plth.El euclidean__axioms.Point) =>
+              plth.ex
+                euclidean__axioms.Point
+                (x:(plth.El euclidean__axioms.Point) =>
+                 plth.ex
+                   euclidean__axioms.Point
+                   (z:(plth.El euclidean__axioms.Point) =>
+                    plth.ex
+                      euclidean__axioms.Point
+                      (u:(plth.El euclidean__axioms.Point) =>
+                       plth.ex
+                         euclidean__axioms.Point
+                         (w:(plth.El euclidean__axioms.Point) =>
+                          plth.ex
+                            euclidean__axioms.Point
+                            (W:(plth.El euclidean__axioms.Point) =>
+                             plth.and
+                               (RC A B C D X Y Z U)
+                               (plth.and
+                                  (RC a b c d x Y z u)
+                                  (plth.and
+                                     (euclidean__axioms.BetS x Y Z)
+                                     (plth.and
+                                        (euclidean__axioms.BetS X Y z)
+                                        (euclidean__axioms.BetS W U w))))))))))))).
+
+def equilateral :
+  plth.predicate
+    (plth.cons
+       euclidean__axioms.Point
+       (plth.cons euclidean__axioms.Point (plth.cons euclidean__axioms.Point plth.nil)))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  plth.and (euclidean__axioms.Cong A B B C) (euclidean__axioms.Cong B C C A).
+

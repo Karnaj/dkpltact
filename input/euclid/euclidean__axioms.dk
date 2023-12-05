@@ -1,0 +1,1184 @@
+Point : plth.Set.
+
+Circle : plth.Set.
+
+Cong :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))).
+
+BetS :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point plth.nil))).
+
+PA : plth.El Point.
+
+PB : plth.El Point.
+
+PC : plth.El Point.
+
+CI :
+  plth.predicate (plth.cons Circle (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))).
+
+def TE :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))
+  :=
+  A:(plth.El Point) =>
+  B:(plth.El Point) =>
+  C:(plth.El Point) =>
+  plth.not (plth.and (plth.neq Point A B) (plth.and (plth.neq Point B C) (plth.not (BetS A B C)))).
+
+def nCol :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))
+  :=
+  A:(plth.El Point) =>
+  B:(plth.El Point) =>
+  C:(plth.El Point) =>
+  plth.and
+    (plth.neq Point A B)
+    (plth.and
+       (plth.neq Point A C)
+       (plth.and
+          (plth.neq Point B C)
+          (plth.and
+             (plth.not (BetS A B C))
+             (plth.and (plth.not (BetS A C B)) (plth.not (BetS B A C)))))).
+
+def Col :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))
+  :=
+  A:(plth.El Point) =>
+  B:(plth.El Point) =>
+  C:(plth.El Point) =>
+  plth.or
+    (plth.eq Point A B)
+    (plth.or
+       (plth.eq Point A C)
+       (plth.or (plth.eq Point B C) (plth.or (BetS B A C) (plth.or (BetS A B C) (BetS A C B))))).
+
+def Cong__3 :
+  plth.predicate
+    (plth.cons
+       Point
+       (plth.cons
+          Point
+          (plth.cons Point (plth.cons Point (plth.cons Point (plth.cons Point plth.nil))))))
+  :=
+  A:(plth.El Point) =>
+  B:(plth.El Point) =>
+  C:(plth.El Point) =>
+  a:(plth.El Point) =>
+  b:(plth.El Point) =>
+  c:(plth.El Point) => plth.and (Cong A B a b) (plth.and (Cong B C b c) (Cong A C a c)).
+
+def TS :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point (plth.cons Point plth.nil))))
+  :=
+  P:(plth.El Point) =>
+  A:(plth.El Point) =>
+  B:(plth.El Point) =>
+  Q:(plth.El Point) =>
+  plth.ex Point (X:(plth.El Point) => plth.and (BetS P X Q) (plth.and (Col A B X) (nCol A B P))).
+
+def Triangle :
+  plth.predicate (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))
+  :=
+  A:(plth.El Point) => B:(plth.El Point) => C:(plth.El Point) => nCol A B C.
+
+def OnCirc :
+  plth.predicate (plth.cons Point (plth.cons Circle plth.nil))
+  :=
+  B:(plth.El Point) =>
+  J:(plth.El Circle) =>
+  plth.ex
+    Point
+    (X:(plth.El Point) =>
+     plth.ex
+       Point
+       (Y:(plth.El Point) =>
+        plth.ex Point (U:(plth.El Point) => plth.and (CI J U X Y) (Cong U B X Y)))).
+
+def InCirc :
+  plth.predicate (plth.cons Point (plth.cons Circle plth.nil))
+  :=
+  P:(plth.El Point) =>
+  J:(plth.El Circle) =>
+  plth.ex
+    Point
+    (X:(plth.El Point) =>
+     plth.ex
+       Point
+       (Y:(plth.El Point) =>
+        plth.ex
+          Point
+          (U:(plth.El Point) =>
+           plth.ex
+             Point
+             (V:(plth.El Point) =>
+              plth.ex
+                Point
+                (W:(plth.El Point) =>
+                 plth.and
+                   (CI J U V W)
+                   (plth.or
+                      (plth.eq Point P U)
+                      (plth.and (BetS U Y X) (plth.and (Cong U X V W) (Cong U P U Y))))))))).
+
+def OutCirc :
+  plth.predicate (plth.cons Point (plth.cons Circle plth.nil))
+  :=
+  P:(plth.El Point) =>
+  J:(plth.El Circle) =>
+  plth.ex
+    Point
+    (X:(plth.El Point) =>
+     plth.ex
+       Point
+       (U:(plth.El Point) =>
+        plth.ex
+          Point
+          (V:(plth.El Point) =>
+           plth.ex
+             Point
+             (W:(plth.El Point) => plth.and (CI J U V W) (plth.and (BetS U X P) (Cong U X V W)))))).
+
+cn__congruencetransitive :
+  plth.Prf
+    (plth.forall
+       Point
+       (B:(plth.El Point) =>
+        plth.forall
+          Point
+          (C:(plth.El Point) =>
+           plth.forall
+             Point
+             (D:(plth.El Point) =>
+              plth.forall
+                Point
+                (E:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (P:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (Q:(plth.El Point) =>
+                       plth.imp (Cong P Q B C) (plth.imp (Cong P Q D E) (Cong B C D E))))))))).
+
+cn__congruencereflexive :
+  plth.Prf
+    (plth.forall Point (A:(plth.El Point) => plth.forall Point (B:(plth.El Point) => Cong A B A B))).
+
+cn__equalityreverse :
+  plth.Prf
+    (plth.forall Point (A:(plth.El Point) => plth.forall Point (B:(plth.El Point) => Cong A B B A))).
+
+cn__sumofparts :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (a:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (b:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (c:(plth.El Point) =>
+                       plth.imp
+                         (Cong A B a b)
+                         (plth.imp
+                            (Cong B C b c)
+                            (plth.imp (BetS A B C) (plth.imp (BetS a b c) (Cong A C a c))))))))))).
+
+cn__stability :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) => plth.imp (plth.not (plth.neq Point A B)) (plth.eq Point A B)))).
+
+axiom__circle__center__radius :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Circle
+                (J:(plth.El Circle) =>
+                 plth.forall
+                   Point
+                   (P:(plth.El Point) =>
+                    plth.imp (CI J A B C) (plth.imp (OnCirc P J) (Cong A P B C)))))))).
+
+axiom__lower__dim : plth.Prf (nCol PA PB PC).
+
+axiom__betweennessidentity :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) => plth.forall Point (B:(plth.El Point) => plth.not (BetS A B A)))).
+
+axiom__betweennesssymmetry :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall Point (C:(plth.El Point) => plth.imp (BetS A B C) (BetS C B A))))).
+
+axiom__innertransitivity :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) => plth.imp (BetS A B D) (plth.imp (BetS B C D) (BetS A B C))))))).
+
+axiom__connectivity :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.imp
+                   (BetS A B D)
+                   (plth.imp
+                      (BetS A C D)
+                      (plth.imp
+                         (plth.not (BetS A B C))
+                         (plth.imp (plth.not (BetS A C B)) (plth.eq Point B C))))))))).
+
+axiom__nocollapse :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.imp (plth.neq Point A B) (plth.imp (Cong A B C D) (plth.neq Point C D))))))).
+
+axiom__5__line :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (a:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (b:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (c:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (d:(plth.El Point) =>
+                             plth.imp
+                               (Cong B C b c)
+                               (plth.imp
+                                  (Cong A D a d)
+                                  (plth.imp
+                                     (Cong B D b d)
+                                     (plth.imp
+                                        (BetS A B C)
+                                        (plth.imp
+                                           (BetS a b c)
+                                           (plth.imp (Cong A B a b) (Cong D C d c))))))))))))))).
+
+postulate__Pasch__inner :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (P:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (Q:(plth.El Point) =>
+                    plth.imp
+                      (BetS A P C)
+                      (plth.imp
+                         (BetS B Q C)
+                         (plth.imp
+                            (nCol A C B)
+                            (plth.ex
+                               Point
+                               (X:(plth.El Point) => plth.and (BetS A X Q) (BetS B X P))))))))))).
+
+postulate__Pasch__outer :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (P:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (Q:(plth.El Point) =>
+                    plth.imp
+                      (BetS A P C)
+                      (plth.imp
+                         (BetS B C Q)
+                         (plth.imp
+                            (nCol B Q A)
+                            (plth.ex
+                               Point
+                               (X:(plth.El Point) => plth.and (BetS A X Q) (BetS B P X))))))))))).
+
+postulate__Euclid2 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.imp (plth.neq Point A B) (plth.ex Point (X:(plth.El Point) => BetS A B X))))).
+
+postulate__Euclid3 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.imp (plth.neq Point A B) (plth.ex Circle (X:(plth.El Circle) => CI X A A B))))).
+
+postulate__line__circle :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Circle
+                (K:(plth.El Circle) =>
+                 plth.forall
+                   Point
+                   (P:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (Q:(plth.El Point) =>
+                       plth.imp
+                         (CI K C P Q)
+                         (plth.imp
+                            (InCirc B K)
+                            (plth.imp
+                               (plth.neq Point A B)
+                               (plth.ex
+                                  Point
+                                  (X:(plth.El Point) =>
+                                   plth.ex
+                                     Point
+                                     (Y:(plth.El Point) =>
+                                      plth.and
+                                        (Col A B X)
+                                        (plth.and
+                                           (BetS A B Y)
+                                           (plth.and
+                                              (OnCirc X K)
+                                              (plth.and (OnCirc Y K) (BetS X B Y)))))))))))))))).
+
+postulate__circle__circle :
+  plth.Prf
+    (plth.forall
+       Point
+       (C:(plth.El Point) =>
+        plth.forall
+          Point
+          (D:(plth.El Point) =>
+           plth.forall
+             Point
+             (F:(plth.El Point) =>
+              plth.forall
+                Point
+                (G:(plth.El Point) =>
+                 plth.forall
+                   Circle
+                   (J:(plth.El Circle) =>
+                    plth.forall
+                      Circle
+                      (K:(plth.El Circle) =>
+                       plth.forall
+                         Point
+                         (P:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (Q:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (R:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (S:(plth.El Point) =>
+                                   plth.imp
+                                     (CI J C R S)
+                                     (plth.imp
+                                        (InCirc P J)
+                                        (plth.imp
+                                           (OutCirc Q J)
+                                           (plth.imp
+                                              (CI K D F G)
+                                              (plth.imp
+                                                 (OnCirc P K)
+                                                 (plth.imp
+                                                    (OnCirc Q K)
+                                                    (plth.ex
+                                                       Point
+                                                       (X:(plth.El Point) =>
+                                                        plth.and
+                                                          (OnCirc X J)
+                                                          (OnCirc X K))))))))))))))))))).
+
+postulate__Euclid5 :
+  plth.Prf
+    (plth.forall
+       Point
+       (a:(plth.El Point) =>
+        plth.forall
+          Point
+          (p:(plth.El Point) =>
+           plth.forall
+             Point
+             (q:(plth.El Point) =>
+              plth.forall
+                Point
+                (r:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (s:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (t:(plth.El Point) =>
+                       plth.imp
+                         (BetS r t s)
+                         (plth.imp
+                            (BetS p t q)
+                            (plth.imp
+                               (BetS r a q)
+                               (plth.imp
+                                  (Cong p t q t)
+                                  (plth.imp
+                                     (Cong t r t s)
+                                     (plth.imp
+                                        (nCol p q s)
+                                        (plth.ex
+                                           Point
+                                           (X:(plth.El Point) =>
+                                            plth.and (BetS p a X) (BetS s q X))))))))))))))).
+
+EF :
+  plth.predicate
+    (plth.cons
+       Point
+       (plth.cons
+          Point
+          (plth.cons
+             Point
+             (plth.cons
+                Point
+                (plth.cons Point (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))))))).
+
+ET :
+  plth.predicate
+    (plth.cons
+       Point
+       (plth.cons
+          Point
+          (plth.cons Point (plth.cons Point (plth.cons Point (plth.cons Point plth.nil)))))).
+
+axiom__congruentequal :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (a:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (b:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (c:(plth.El Point) => plth.imp (Cong__3 A B C a b c) (ET A B C a b c)))))))).
+
+axiom__ETpermutation :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (a:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (b:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (c:(plth.El Point) =>
+                       plth.imp
+                         (ET A B C a b c)
+                         (plth.and
+                            (ET A B C b c a)
+                            (plth.and
+                               (ET A B C a c b)
+                               (plth.and
+                                  (ET A B C b a c)
+                                  (plth.and (ET A B C c b a) (ET A B C c a b)))))))))))).
+
+axiom__ETsymmetric :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (a:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (b:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (c:(plth.El Point) => plth.imp (ET A B C a b c) (ET a b c A B C)))))))).
+
+axiom__EFpermutation :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (a:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (b:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (c:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (d:(plth.El Point) =>
+                             plth.imp
+                               (EF A B C D a b c d)
+                               (plth.and
+                                  (EF A B C D b c d a)
+                                  (plth.and
+                                     (EF A B C D d c b a)
+                                     (plth.and
+                                        (EF A B C D c d a b)
+                                        (plth.and
+                                           (EF A B C D b a d c)
+                                           (plth.and
+                                              (EF A B C D d a b c)
+                                              (plth.and
+                                                 (EF A B C D c b a d)
+                                                 (EF A B C D a d c b)))))))))))))))).
+
+axiom__halvesofequals :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (a:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (b:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (c:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (d:(plth.El Point) =>
+                             plth.imp
+                               (ET A B C B C D)
+                               (plth.imp
+                                  (TS A B C D)
+                                  (plth.imp
+                                     (ET a b c b c d)
+                                     (plth.imp
+                                        (TS a b c d)
+                                        (plth.imp (EF A B D C a b d c) (ET A B C a b c)))))))))))))).
+
+axiom__EFsymmetric :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (a:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (b:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (c:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (d:(plth.El Point) =>
+                             plth.imp (EF A B C D a b c d) (EF a b c d A B C D)))))))))).
+
+axiom__EFtransitive :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (P:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (Q:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (R:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (S:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (a:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (b:(plth.El Point) =>
+                                   plth.forall
+                                     Point
+                                     (c:(plth.El Point) =>
+                                      plth.forall
+                                        Point
+                                        (d:(plth.El Point) =>
+                                         plth.imp
+                                           (EF A B C D a b c d)
+                                           (plth.imp
+                                              (EF a b c d P Q R S)
+                                              (EF A B C D P Q R S))))))))))))))).
+
+axiom__ETtransitive :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (P:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (Q:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (R:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (a:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (b:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (c:(plth.El Point) =>
+                                plth.imp
+                                  (ET A B C a b c)
+                                  (plth.imp (ET a b c P Q R) (ET A B C P Q R)))))))))))).
+
+axiom__cutoff1 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (E:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (a:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (b:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (c:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (d:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (e:(plth.El Point) =>
+                                   plth.imp
+                                     (BetS A B C)
+                                     (plth.imp
+                                        (BetS a b c)
+                                        (plth.imp
+                                           (BetS E D C)
+                                           (plth.imp
+                                              (BetS e d c)
+                                              (plth.imp
+                                                 (ET B C D b c d)
+                                                 (plth.imp
+                                                    (ET A C E a c e)
+                                                    (EF A B D E a b d e))))))))))))))))).
+
+axiom__cutoff2 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (E:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (a:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (b:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (c:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (d:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (e:(plth.El Point) =>
+                                   plth.imp
+                                     (BetS B C D)
+                                     (plth.imp
+                                        (BetS b c d)
+                                        (plth.imp
+                                           (ET C D E c d e)
+                                           (plth.imp
+                                              (EF A B D E a b d e)
+                                              (EF A B C E a b c e))))))))))))))).
+
+axiom__paste1 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (E:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (a:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (b:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (c:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (d:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (e:(plth.El Point) =>
+                                   plth.imp
+                                     (BetS A B C)
+                                     (plth.imp
+                                        (BetS a b c)
+                                        (plth.imp
+                                           (BetS E D C)
+                                           (plth.imp
+                                              (BetS e d c)
+                                              (plth.imp
+                                                 (ET B C D b c d)
+                                                 (plth.imp
+                                                    (EF A B D E a b d e)
+                                                    (ET A C E a c e))))))))))))))))).
+
+axiom__deZolt1 :
+  plth.Prf
+    (plth.forall
+       Point
+       (B:(plth.El Point) =>
+        plth.forall
+          Point
+          (C:(plth.El Point) =>
+           plth.forall
+             Point
+             (D:(plth.El Point) =>
+              plth.forall
+                Point
+                (E:(plth.El Point) => plth.imp (BetS B E D) (plth.not (ET D B C E B C))))))).
+
+axiom__deZolt2 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (E:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (F:(plth.El Point) =>
+                    plth.imp
+                      (Triangle A B C)
+                      (plth.imp
+                         (BetS B E A)
+                         (plth.imp (BetS B F C) (plth.not (ET A B C E B F)))))))))).
+
+axiom__paste2 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (E:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (M:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (a:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (b:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (c:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (d:(plth.El Point) =>
+                                   plth.forall
+                                     Point
+                                     (e:(plth.El Point) =>
+                                      plth.forall
+                                        Point
+                                        (m:(plth.El Point) =>
+                                         plth.imp
+                                           (BetS B C D)
+                                           (plth.imp
+                                              (BetS b c d)
+                                              (plth.imp
+                                                 (ET C D E c d e)
+                                                 (plth.imp
+                                                    (EF A B C E a b c e)
+                                                    (plth.imp
+                                                       (BetS A M D)
+                                                       (plth.imp
+                                                          (BetS B M E)
+                                                          (plth.imp
+                                                             (BetS a m d)
+                                                             (plth.imp
+                                                                (BetS b m e)
+                                                                (EF
+                                                                   A
+                                                                   B
+                                                                   D
+                                                                   E
+                                                                   a
+                                                                   b
+                                                                   d
+                                                                   e))))))))))))))))))))).
+
+axiom__paste3 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (M:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (a:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (b:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (c:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (d:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (m:(plth.El Point) =>
+                                   plth.imp
+                                     (ET A B C a b c)
+                                     (plth.imp
+                                        (ET A B D a b d)
+                                        (plth.imp
+                                           (BetS C M D)
+                                           (plth.imp
+                                              (plth.or
+                                                 (BetS A M B)
+                                                 (plth.or
+                                                    (plth.eq Point A M)
+                                                    (plth.eq Point M B)))
+                                              (plth.imp
+                                                 (BetS c m d)
+                                                 (plth.imp
+                                                    (plth.or
+                                                       (BetS a m b)
+                                                       (plth.or
+                                                          (plth.eq Point a m)
+                                                          (plth.eq Point m b)))
+                                                    (EF A C B D a c b d))))))))))))))))).
+
+axiom__paste4 :
+  plth.Prf
+    (plth.forall
+       Point
+       (A:(plth.El Point) =>
+        plth.forall
+          Point
+          (B:(plth.El Point) =>
+           plth.forall
+             Point
+             (C:(plth.El Point) =>
+              plth.forall
+                Point
+                (D:(plth.El Point) =>
+                 plth.forall
+                   Point
+                   (F:(plth.El Point) =>
+                    plth.forall
+                      Point
+                      (G:(plth.El Point) =>
+                       plth.forall
+                         Point
+                         (H:(plth.El Point) =>
+                          plth.forall
+                            Point
+                            (J:(plth.El Point) =>
+                             plth.forall
+                               Point
+                               (K:(plth.El Point) =>
+                                plth.forall
+                                  Point
+                                  (L:(plth.El Point) =>
+                                   plth.forall
+                                     Point
+                                     (M:(plth.El Point) =>
+                                      plth.forall
+                                        Point
+                                        (P:(plth.El Point) =>
+                                         plth.forall
+                                           Point
+                                           (e:(plth.El Point) =>
+                                            plth.forall
+                                              Point
+                                              (m:(plth.El Point) =>
+                                               plth.imp
+                                                 (EF A B m D F K H G)
+                                                 (plth.imp
+                                                    (EF D B e C G H M L)
+                                                    (plth.imp
+                                                       (BetS A P C)
+                                                       (plth.imp
+                                                          (BetS B P D)
+                                                          (plth.imp
+                                                             (BetS K H M)
+                                                             (plth.imp
+                                                                (BetS F G L)
+                                                                (plth.imp
+                                                                   (BetS B m D)
+                                                                   (plth.imp
+                                                                    (BetS
+                                                                    B
+                                                                    e
+                                                                    C)
+                                                                    (plth.imp
+                                                                    (BetS
+                                                                    F
+                                                                    J
+                                                                    M)
+                                                                    (plth.imp
+                                                                    (BetS
+                                                                    K
+                                                                    J
+                                                                    L)
+                                                                    (EF
+                                                                    A
+                                                                    B
+                                                                    C
+                                                                    D
+                                                                    F
+                                                                    K
+                                                                    M
+                                                                    L))))))))))))))))))))))))).
+
