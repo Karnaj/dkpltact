@@ -94,7 +94,7 @@ let main input_file =
   let _ = Api.Files.add_path "input" in
   parse_module ([], [ input_file ], []) input_file
 
-let _ = main "proposition__30"
+let _ = main "proposition__25"
 (*"input/euclid/lemma__equalitysymmetric.dk" *)
 (*"euclidean__axioms"*)
 
