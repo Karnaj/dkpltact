@@ -3,6 +3,7 @@ type variable = string
 
 type element =
   | ElementCst of variable
+  | Variable of variable
   | GlobalElementCst of name
   | FunctionCall of name * element list
 
@@ -129,3 +130,31 @@ type context_element =
 
 type global_context = name * context_element list
 type local_context = variable * context_element list
+
+
+
+let rec replace_el (id: variable) (el: element) (t: element) =
+  match el with
+  | Variable x when id = x -> t
+  | FunctionCall (f, l) ->
+      FunctionCall (f, List.map (fun el -> replace_el id el t) l)
+  | _ -> el
+
+and instantiate (id : variable) (p : proposition) (t : element) =
+  match p with
+  | Implication (p, q) ->
+      Implication (instantiate id p t, instantiate id q t)
+  | Conjonction (p, q) ->
+      Conjonction (instantiate id p t, instantiate id q t)
+  | Disjonction (p, q) ->
+      Disjonction (instantiate id p t, instantiate id q t)
+  | Negation p -> Negation (instantiate id p t)
+  | Equality (set, x, y) ->
+      Equality (set, replace_el id x t, replace_el id y t)
+  | NotEquality (set, x, y) ->
+      NotEquality (set, replace_el id x t, replace_el id y t)
+  | PredicateCall (f, l) ->
+      PredicateCall (f, List.map (fun el -> replace_el id el t) l)
+  | Forall (set, y, p) when id <> y -> Forall (set, y, instantiate id p t)
+  | Exists (set, y, p) when id <> y -> Exists (set, y, instantiate id p t)
+  | _ -> p

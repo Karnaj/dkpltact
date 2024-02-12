@@ -3,6 +3,7 @@ type variable = string
 
 type coq_element =
   | ElementCst of variable
+  | Variable of variable
   | GlobalElementCst of name
   | FunctionCall of name * coq_element list
 
@@ -72,6 +73,7 @@ let rec translate_proof p = p
 
 and translate_element x =
   match x with
+  | Ast.Variable x -> Variable x
   | Ast.ElementCst x -> ElementCst x
   | Ast.GlobalElementCst x -> GlobalElementCst x
   | Ast.FunctionCall (f, l) -> FunctionCall (f, List.map translate_element l)
@@ -141,6 +143,7 @@ let rec string_of_call f args =
 and string_of_coq_element x =
   match x with
   | ElementCst x -> x
+  | Variable x -> x
   | GlobalElementCst x -> string_of_name x
   | FunctionCall (f, args) -> string_of_call f args
 
@@ -380,7 +383,6 @@ let rec string_of_term t =
 | EqTrans of name * element * element * element * proof * proof 
 *)
 and coq_string_step_of_proof p ctx =
-  let p = Proof.simplify_proof p in
   match p with
   | Ast.T -> [ Command "apply I." ]
   | Ast.Assumption x -> [ Command (Printf.sprintf "exact %s." x) ]
@@ -392,7 +394,7 @@ and coq_string_step_of_proof p ctx =
       [ Command (Printf.sprintf "contradiction %s." (string_of_name x)) ]
   | Ast.FalseElim p ->
       let l = coq_string_step_of_proof p ctx in
-      Command "assert False." :: l
+      [ Command "assert False." ; Step l ; Step [ Command (Printf.sprintf "contradiction.") ]]
   | Ast.AndIntro (_, _, p1, p2) ->
       let l1 = coq_string_step_of_proof p1 ctx in
       let l2 = coq_string_step_of_proof p2 ctx in
@@ -425,7 +427,7 @@ and coq_string_step_of_proof p ctx =
       Command str :: l
   | Ast.AndInd (hp, p, hq, q, prfand, _, prf) ->
       let str1 =
-        Printf.sprintf "assert (%s) as %s."
+        Printf.sprintf "(* 1 *) assert (%s) as %s."
           (string_of_coq_prop
              (Conjonction (translate_proposition p, translate_proposition q)))
           hp
@@ -436,7 +438,7 @@ and coq_string_step_of_proof p ctx =
       [ Command str1; Step strand; Step (Command str2 :: strprf) ]
   | Ast.AndIndRight (p, hq, q, prfand, _, prf) ->
       let str1 =
-        Printf.sprintf "assert (%s) as %s."
+        Printf.sprintf "(* 2 *) assert (%s) as %s."
           (string_of_coq_prop
              (Conjonction (translate_proposition p, translate_proposition q)))
           hq
@@ -447,7 +449,7 @@ and coq_string_step_of_proof p ctx =
       [ Command str1; Step strand; Step (Command str2 :: strprf) ]
   | Ast.AndIndLeft (hp, p, q, prfand, _, prf) ->
       let str1 =
-        Printf.sprintf "assert (%s) as %s."
+        Printf.sprintf "(* 3 *) assert (%s) as %s."
           (string_of_coq_prop
              (Conjonction (translate_proposition p, translate_proposition q)))
           hp
@@ -470,7 +472,7 @@ and coq_string_step_of_proof p ctx =
       [ Command str ]
   | Ast.AndElimRight (p, q, prf) ->
       let str1 =
-        Printf.sprintf "assert (%s) as Hand."
+        Printf.sprintf "(* 4 *) assert (%s) as Hand."
           (string_of_coq_prop
              (Conjonction (translate_proposition p, translate_proposition q)))
       in
@@ -479,7 +481,7 @@ and coq_string_step_of_proof p ctx =
       [ Command str1; Step strand; Step [ Command str2 ] ]
   | Ast.AndElimLeft (p, q, prf) ->
       let str1 =
-        Printf.sprintf "assert (%s) as Hand."
+        Printf.sprintf "(* 5 *)  assert (%s) as Hand."
           (string_of_coq_prop
              (Conjonction (translate_proposition p, translate_proposition q)))
       in
@@ -508,7 +510,7 @@ and coq_string_step_of_proof p ctx =
       [ Command str1; Step strleft; Step strright ]
   | Ast.OrInd (p, q, _, hleft, proofleft, hright, proofright, prf) ->
       let str =
-        Printf.sprintf "assert (%s) as %s."
+        Printf.sprintf "(* 6 *) assert (%s) as %s."
           (string_of_coq_prop
              (Disjonction (translate_proposition p, translate_proposition q)))
           hleft
@@ -541,7 +543,7 @@ and coq_string_step_of_proof p ctx =
       Command str :: str1
   | Ast.ExInd (pred, _, prfexists, wit_name, h, proof_p) ->
       let stror =
-        Printf.sprintf "assert (%s) as %s."
+        Printf.sprintf "(* 7 *) assert (%s) as %s."
           (string_of_coq_prop (translate_proposition (Ast.Exists pred)))
           h
       in
@@ -598,7 +600,7 @@ and coq_string_step_of_proof p ctx =
       failwith "No more elimination of implication; replaced by application."
   | Ast.Cut (p, prfp, h, prf) ->
       let strcut =
-        Printf.sprintf "assert (%s) as %s." (coq_string_of_prop p) h
+        Printf.sprintf "(* 8 *) assert (%s) as %s." (coq_string_of_prop p) h
       in
       let strp = coq_string_step_of_proof prfp ctx in
       let str = coq_string_step_of_proof prf ctx in
@@ -631,39 +633,98 @@ and coq_string_step_of_proof p ctx =
   | Ast.EqTrans (_, _, y, _, proof1, proof2) ->
       let proof1 = coq_string_step_of_proof proof1 ctx in
       let proof2 = coq_string_step_of_proof proof2 ctx in
+      let y = translate_element y in
       let str =
         Printf.sprintf "transitivity %s."
-          (string_of_coq_element (translate_element y))
+          (string_with_or_without_par (string_of_coq_element y)
+             (not (is_atomic_element y)))
       in
       Command str :: Step proof1 :: [ Step proof2 ]
-  | Ast.EqElim ((_, id, pred), x, y, hprf, prf, heq, prfeq) ->
+  (*| _ -> [ Command "admit." ] *)
+  | Ast.EqElim ((set, id, pred), x, y, hprf, prf, heq, prfeq) ->
       let prf = coq_string_step_of_proof prf ctx in
       let prfeq = coq_string_step_of_proof prfeq ctx in
-      let cuteq = Printf.sprintf "assert (%s = %s) as %s." (string_of_coq_element (translate_element x)) (string_of_coq_element (translate_element y)) heq in
-      let cut = Printf.sprintf "assert (%s) as %s." (coq_string_of_prop (Parse.instantiate id pred x)) hprf in
-      let rew1 = Printf.sprintf "rewrite %s in %s." heq hprf in
-      let rew2 = Printf.sprintf "now rewrite %s." heq in
-      [ (Command cut) ; 
-        (Step prf) ; 
-        Step [ (Command cuteq); 
-          (Step prfeq) ; Step( [(Command rew1); (Command rew2)])
-        ] 
+      let cuteq =
+        Printf.sprintf "(* 9 *)  assert (%s = %s) as %s."
+          (string_of_coq_element (translate_element x))
+          (string_of_coq_element (translate_element y))
+          heq
+      in
+      let cut =
+        Printf.sprintf "(* 10 *) assert (%s) as %s."
+          (coq_string_of_prop (Ast.instantiate id pred x))
+          hprf
+      in
+      let x = translate_element x in
+      let y = translate_element y in
+      let eqind = Printf.sprintf "apply (@eq_ind %s %s (fun %s => %s) %s %s %s)." 
+        (string_of_name set)
+        (string_with_or_without_par (string_of_coq_element x) (not (is_atomic_element x)))
+        id
+        (coq_string_of_prop pred)
+        hprf
+        (string_with_or_without_par (string_of_coq_element y) (not (is_atomic_element y)))
+        heq
+      in
+      [
+        Command cut;
+        Step prf;
+        Step [ Command cuteq; Step prfeq; Step [Command eqind] ];
       ]
-
-  | Ast.EqElimR ((_, id, pred), x, y, hprf, prf, heq, prfeq) ->
-    let prf = coq_string_step_of_proof prf ctx in
-    let prfeq = coq_string_step_of_proof prfeq ctx in
-    let cuteq = Printf.sprintf "assert (%s = %s) as %s." (string_of_coq_element (translate_element y)) (string_of_coq_element (translate_element x)) heq in
-    let cut = Printf.sprintf "assert (%s) as %s." (coq_string_of_prop (Parse.instantiate id pred x)) hprf in
-    let rew1 = Printf.sprintf "rewrite %s in %s." heq hprf in
-    let rew2 = Printf.sprintf "now rewrite %s." heq in
-    [ (Command cut) ; 
-      (Step prf) ; 
-      Step [ (Command cuteq); 
-        (Step prfeq) ; Step( [(Command rew1); (Command rew2)])
-      ] 
+      (*let rew1 = Printf.sprintf "rewrite %s in %s." heq hprf in
+      let rew2 = Printf.sprintf "now rewrite %s." heq in
+      [
+        Command cut;
+        Step prf;
+        Step [ Command cuteq; Step prfeq; Step [ Command rew1; Command rew2 ] ];
+      ] *)
+  | Ast.EqElimR ((set, id, pred), x, y, hprf, prf, heq, prfeq) ->
+      let prf = coq_string_step_of_proof prf ctx in
+      let prfeq = coq_string_step_of_proof prfeq ctx in
+      let cuteq =
+        Printf.sprintf "(* 11 *) assert (%s = %s) as %s."
+          (string_of_coq_element (translate_element y))
+          (string_of_coq_element (translate_element x))
+          heq
+      in
+      let cut =
+        Printf.sprintf "(* 12 *)  assert (%s) as %s."
+          (coq_string_of_prop (Ast.instantiate id pred x))
+          hprf
+      in
+      let x = translate_element x in
+      let y = translate_element y in
+      let eqind = Printf.sprintf "apply (@eq_ind_r %s %s (fun %s => %s) %s %s %s)." 
+      (string_of_name set)
+      (string_with_or_without_par (string_of_coq_element x) (not (is_atomic_element x)))
+      id
+      (coq_string_of_prop pred)
+      hprf
+      (string_with_or_without_par (string_of_coq_element y) (not (is_atomic_element y)))
+      heq
+    in
+    [
+      Command cut;
+      Step prf;
+      Step [ Command cuteq; Step prfeq; Step [Command eqind] ];
     ]
-      (*
+      (*let rew1 = Printf.sprintf "rewrite <- %s in %s." heq hprf in
+      let rew2 = Printf.sprintf "now rewrite <- %s." heq in
+      [
+        Command cut;
+        Step prf;
+        Step [ Command cuteq; Step prfeq; Step [ Command rew1; Command rew2 ] ];
+      ]*)
+      
+  
+(*
+   On sait prouver P(a), on veut montrer P(b) et on sait prouver a = b.
+   assert (a = b).
+   - prf de a = b.
+   - assert 
+*)
+
+(*
       cut (P x) as H.
       - prf
       - cut x = y as Heq.

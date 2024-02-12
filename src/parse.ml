@@ -83,13 +83,13 @@ let rec parse_element name_assoc x =
       Ast.FunctionCall (function_name, args)
   | T.DB (_, id, _) ->
       let var_name = B.string_of_ident id in
-      Ast.ElementCst (List.assoc var_name name_assoc)
+      Ast.Variable (List.assoc var_name name_assoc)
   | _ ->
       failwith
         "Error, an element is either a constant or the application of a symbol \
          function."
 
-(* No need of the context since we suppose the Dedukti code typechecks. *)
+
 let rec parse_proposition set_index name_assoc p =
   match p with
   | T.Const (_, cst) when is_true cst -> Ast.True
@@ -395,9 +395,11 @@ let rec parse_proof set_index name_assoc p ctx locals =
         match proof1 with
         | T.Lam (_, h1, _, proof1) ->
             let h1 = B.string_of_ident h1 in
-            let name_assoc = (h1, h1_name) :: List.remove_assoc h1 name_assoc in
-            let locals = (h1, Ast.HypothesisC p1) :: locals in
-            fst (parse_proof set_index name_assoc proof1 ctx locals)
+            let name_assoc1 =
+              (h1, h1_name) :: List.remove_assoc h1 name_assoc
+            in
+            let locals1 = (h1, Ast.HypothesisC p1) :: locals in
+            fst (parse_proof set_index name_assoc1 proof1 ctx locals1)
         | _ ->
             let proof1, _ =
               parse_proof set_index name_assoc proof1 ctx locals
@@ -413,9 +415,11 @@ let rec parse_proof set_index name_assoc p ctx locals =
         match proof2 with
         | T.Lam (_, h2, _, proof2) ->
             let h2 = B.string_of_ident h2 in
-            let name_assoc = (h2, h2_name) :: List.remove_assoc h2 name_assoc in
-            let locals = (h2, Ast.HypothesisC p2) :: locals in
-            fst (parse_proof set_index name_assoc proof2 ctx locals)
+            let name_assoc2 =
+              (h2, h2_name) :: List.remove_assoc h2 name_assoc
+            in
+            let locals2 = (h2, Ast.HypothesisC p2) :: locals in
+            fst (parse_proof set_index name_assoc2 proof2 ctx locals2)
         | _ ->
             let proof2, _ =
               parse_proof set_index name_assoc proof2 ctx locals
@@ -458,7 +462,7 @@ let rec parse_proof set_index name_assoc p ctx locals =
             let locals =
               ( h,
                 Ast.HypothesisC
-                  (instantiate xname pred (Ast.ElementCst wit_name)) )
+                  (Ast.instantiate xname pred (Ast.ElementCst wit_name)) )
               :: locals
             in
             fst (parse_proof set_index name_assoc proof_p ctx locals)
@@ -471,7 +475,7 @@ let rec parse_proof set_index name_assoc p ctx locals =
               ( set,
                 wit_name,
                 Ast.Implication
-                  (instantiate xname pred (Ast.ElementCst wit_name), p) )
+                  (Ast.instantiate xname pred (Ast.ElementCst wit_name), p) )
             in
             Ast.Cut
               ( Ast.Forall pred,
@@ -501,11 +505,12 @@ let rec parse_proof set_index name_assoc p ctx locals =
       let y = parse_element name_assoc y in
       let heq, set_index = get_new_name ("", "Heq") set_index in
       let hprf, set_index = get_new_name ("", "Heqp") set_index in
-      let proof, p = parse_proof set_index name_assoc proof ctx locals in
+      let proof, _ = parse_proof set_index name_assoc proof ctx locals in
       let proof_eq, _ = parse_proof set_index name_assoc proof_eq ctx locals in
       parse_proof_with_other_args set_index name_assoc
-        (Ast.EqElim ((set, h1, pred), x, y, hprf, proof, heq, proof_eq))
-        p ctx locals rest
+        (Ast.EqElim ((set, h1name, pred), x, y, hprf, proof, heq, proof_eq))
+        (Ast.instantiate h1name pred y)
+        ctx locals rest
   | T.App
       ( T.Const (_, cst),
         T.Const (_, set_name),
@@ -520,11 +525,12 @@ let rec parse_proof set_index name_assoc p ctx locals =
       let y = parse_element name_assoc y in
       let heq, set_index = get_new_name ("", "Heq") set_index in
       let hprf, set_index = get_new_name ("", "Heqp") set_index in
-      let proof, p = parse_proof set_index name_assoc proof ctx locals in
+      let proof, _ = parse_proof set_index name_assoc proof ctx locals in
       let proof_eq, _ = parse_proof set_index name_assoc proof_eq ctx locals in
       parse_proof_with_other_args set_index name_assoc
-        (Ast.EqElimR ((set, h1, pred), x, y, hprf, proof, heq, proof_eq))
-        p ctx locals rest
+        (Ast.EqElimR ((set, h1name, pred), x, y, hprf, proof, heq, proof_eq))
+        (Ast.instantiate h1name pred y)
+        ctx locals rest
   | T.App (T.Const (_, cst), T.Const (_, set_name), x :: rest)
     when is_eq_refl cst ->
       let set = pair_string_of_name set_name in
@@ -562,18 +568,30 @@ let rec parse_proof set_index name_assoc p ctx locals =
         (Ast.EqTrans (set, x, y, z, proof_eq1, proof_eq2))
         (Ast.Equality (set, x, z))
         ctx locals rest
-  | T.App (T.Lam (_, id, Some (T.App (_, _, [])), prf), statement_prf, args) ->
-      let statement_proof, p =
-        parse_proof set_index name_assoc statement_prf ctx locals
-      in
+  | T.App
+      (T.Lam (_, id, Some (T.App (_, statement, [])), prf), statement_prf, args)
+    ->
+      let statement = parse_proposition set_index name_assoc statement in
       let id = B.string_of_ident id in
-      let hname, set_index1 = get_new_name ("", "Hcut") set_index in
-      let name_assoc1 = (id, hname) :: List.remove_assoc id name_assoc in
-      let locals = (id, Ast.HypothesisC p) :: locals in
-      let prf, result = parse_proof set_index1 name_assoc1 prf ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.Cut (p, statement_proof, hname, prf))
-        result ctx locals args
+      let statement_proof, _ =
+      parse_proof set_index name_assoc statement_prf ctx locals
+      in begin match statement_proof with
+        (*| Ast.Assumption(v) -> 
+          let name_assoc1 = (id, v) :: List.remove_assoc id name_assoc in
+          let locals1 = (id, Ast.HypothesisC statement) :: locals in
+          let prf, result = parse_proof set_index name_assoc1 prf ctx locals1 in
+          parse_proof_with_other_args set_index name_assoc prf result ctx locals args  
+        (* Do the same with global assumption *)     
+            *)
+        | _ -> 
+          let hname, set_index1 = get_new_name ("", "Hcut") set_index in
+          let name_assoc1 = (id, hname) :: List.remove_assoc id name_assoc in
+          let locals1 = (id, Ast.HypothesisC statement) :: locals in
+          let prf, result = parse_proof set_index1 name_assoc1 prf ctx locals1 in
+          parse_proof_with_other_args set_index name_assoc
+          (Ast.Cut (statement, statement_proof, hname, prf))
+          result ctx locals args
+    end
   | T.App (prf, arg, rest) ->
       let prf, p = parse_proof set_index name_assoc prf ctx locals in
       (*begin match p with
@@ -634,7 +652,7 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
       match prf with
       | Ast.Apply (th, l) ->
           let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "Hargapp0") set_index in
+          let newprop, set_index = get_new_name ("", "G") set_index in
           let prfresult, result =
             parse_proof_with_other_args set_index name_assoc
               (Ast.Apply
@@ -646,7 +664,7 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
           (Ast.Cut (p, prfp, newprop, prfresult), result)
       | Ast.ApplyTheorem (th, l) ->
           let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "Hargapp1") set_index in
+          let newprop, set_index = get_new_name ("", "G") set_index in
           let prfresult, result =
             parse_proof_with_other_args set_index name_assoc
               (Ast.ApplyTheorem
@@ -656,8 +674,27 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
               q ctx locals rest
           in
           (Ast.Cut (p, prfp, newprop, prfresult), result)
+      | Ast.GlobalAssumption th ->
+          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
+          let newprop, set_index = get_new_name ("", "G") set_index in
+          let prfresult, result =
+            parse_proof_with_other_args set_index name_assoc
+              (Ast.ApplyTheorem (th, [ Ast.TProof (Ast.Assumption newprop) ]))
+              q ctx locals rest
+          in
+          (Ast.Cut (p, prfp, newprop, prfresult), result)
+      | Ast.Assumption h ->
+          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
+          let newprop, set_index = get_new_name ("", "G") set_index in
+          let prfresult, result =
+            parse_proof_with_other_args set_index name_assoc
+              (Ast.Apply (h, [ Ast.TProof (Ast.Assumption newprop) ]))
+              q ctx locals rest
+          in
+          (Ast.Cut (p, prfp, newprop, prfresult), result)
       | _ ->
-          let newprop, set_index = get_new_name ("", "Hargapp2") set_index in
+          Printf.printf "Là";
+          let newprop, set_index = get_new_name ("", "G") set_index in
           let prfresult, result =
             parse_proof_with_other_args set_index name_assoc
               (Ast.Apply (newprop, []))
@@ -665,19 +702,36 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
           in
           (Ast.Cut (Ast.Implication (p, q), prf, newprop, prfresult), result))
   | Ast.Forall pred, r :: rest -> (
-      let x = parse_element name_assoc r in
+      let x =
+        match parse_element name_assoc r with
+        | Ast.Variable x -> Ast.ElementCst x
+        | x -> x
+      in
       let _, id, p = pred in
+      (*Printf.printf "%s %s.\n" id (Coq.coq_string_of_prop p);
+      Printf.printf "inst with %s => %s.\n"
+        (Coq.string_of_coq_element (Coq.translate_element x))
+        (Coq.coq_string_of_prop (Ast.instantiate id p x)); *)
       match prf with
       | Ast.Apply (th, l) ->
           parse_proof_with_other_args set_index name_assoc
             (Ast.Apply (th, List.rev (Ast.TElement x :: List.rev l)))
-            (instantiate id p x) ctx locals rest
+            (Ast.instantiate id p x) ctx locals rest
       | Ast.ApplyTheorem (th, l) ->
           parse_proof_with_other_args set_index name_assoc
             (Ast.ApplyTheorem (th, List.rev (Ast.TElement x :: List.rev l)))
-            (instantiate id p x) ctx locals rest
+            (Ast.instantiate id p x) ctx locals rest
+      (* If (Global) Assumption, something to do here *)
+      | Ast.GlobalAssumption th ->
+          parse_proof_with_other_args set_index name_assoc
+            (Ast.ApplyTheorem (th, [ Ast.TElement x ]))
+            (Ast.instantiate id p x) ctx locals rest
+      | Ast.Assumption h ->
+          parse_proof_with_other_args set_index name_assoc
+            (Ast.Apply (h, [ Ast.TElement x ]))
+            (Ast.instantiate id p x) ctx locals rest
       | _ ->
-          let newprop, set_index = get_new_name ("", "Hargfor") set_index in
+          let newprop, set_index = get_new_name ("", "G") set_index in
           let prfresult, result =
             parse_proof_with_other_args set_index name_assoc
               (Ast.Apply (newprop, []))
@@ -748,7 +802,7 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
       let prf_x, _ = parse_proof set_index name_assoc prf_x ctx locals in
       let prf_y = Ast.EqElim (pred, x, y, hprf, prf_x, heq, prf) in
       parse_proof_with_other_args set_index name_assoc prf_y
-        (instantiate id p y) ctx locals rest
+        (Ast.instantiate id p y) ctx locals rest
   (*
 (x = y) (P x) (P y)
 
@@ -764,8 +818,8 @@ cut x = y as H
       let id = B.string_of_ident z in
       let p = parse_proposition set_index name_assoc predicate in
       let pred = (set, id, p) in
-      let px = instantiate id p x in
-      let py = instantiate id p y in
+      let px = Ast.instantiate id p x in
+      let py = Ast.instantiate id p y in
       let heq, set_index = get_new_name ("", "H") set_index in
       let hprf, _ = get_new_name ("", "H") set_index in
       let impl = Ast.Implication (px, py) in
@@ -817,30 +871,6 @@ cut x = y as H
   | _ ->
       (*let _ = Printf.printf "%s\n" (Coq.coq_string_of_prop prop) in *)
       failwith "booh, not yet implemented"
-
-and replace_el id el t =
-  match el with
-  | Ast.ElementCst x when id = x -> t
-  | Ast.FunctionCall (f, l) ->
-      Ast.FunctionCall (f, List.map (fun el -> replace_el id el t) l)
-  | _ -> el
-
-and instantiate (id : string) (p : Ast.proposition) (t : Ast.element) =
-  match p with
-  | Ast.Implication (p, q) ->
-      Ast.Implication (instantiate id p t, instantiate id q t)
-  | Ast.Conjonction (p, q) ->
-      Ast.Conjonction (instantiate id p t, instantiate id q t)
-  | Ast.Disjonction (p, q) ->
-      Ast.Disjonction (instantiate id p t, instantiate id q t)
-  | Ast.Negation p -> Ast.Negation (instantiate id p t)
-  | Ast.Equality (set, x, y) ->
-      Ast.Equality (set, replace_el id x t, replace_el id y t)
-  | Ast.PredicateCall (f, l) ->
-      Ast.PredicateCall (f, List.map (fun el -> replace_el id el t) l)
-  | Forall (set, y, p) when id <> y -> Forall (set, y, instantiate id p t)
-  | Exists (set, y, p) when id <> y -> Exists (set, y, instantiate id p t)
-  | _ -> p
 
 let parse_basic_declaration name decl =
   match decl with

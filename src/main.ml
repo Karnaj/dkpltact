@@ -22,17 +22,23 @@ let test file out ctx entry =
   Printf.fprintf out "%s\n\n" (Coq.string_of_decl entry);
   context_entry :: ctx
 
-let parse_file ctx file =
+let print_deps out deps =
+  List.iter (Printf.fprintf out "Require Import %s.\n") deps;
+  Printf.fprintf out "Require Import Coq.Logic.Classical_Prop.\n";
+  Printf.fprintf out "\n"
+
+let parse_file folder ctx file deps =
   let oc = open_out ("output/" ^ file ^ ".v") in
-  Printf.printf "\nWe are parsing %s.\n" file;
-  let entries = P.(parse (input_from_file ("input/euclid/" ^ file ^ ".dk"))) in
+  Printf.printf "\nWe are parsing %s.\n%!" file;
+  let entries = P.(parse (input_from_file (folder ^ file ^ ".dk"))) in
+  print_deps oc deps;
   let ctx = List.fold_left (test file oc) ctx entries in
-  Printf.printf "Finish with %s.\n\n" file;
+  Printf.printf "Finish with %s.\n\n%!" file;
   close_out oc;
   ctx
 
-let dep_of_file file =
-  let entries = P.(parse (input_from_file ("input/euclid/" ^ file ^ ".dk"))) in
+let dep_of_file folder file =
+  let entries = P.(parse (input_from_file (folder ^ file ^ ".dk"))) in
   let deps =
     List.fold_left
       (fun qset e -> Extras.StrSet.union qset (Deps.dep_of_entry [] e))
@@ -40,19 +46,19 @@ let dep_of_file file =
   in
   Extras.StrSet.elements deps
 
-let rec parse_module dones_and_ctx file =
+let rec parse_module folder dones_and_ctx file =
   let dones, todo, ctx = dones_and_ctx in
   if List.mem file dones && not (List.mem file todo) then (dones, todo, ctx)
   else
     let env =
       Api.Env.init
-        (Parsers.Parser.input_from_file ("input/euclid/" ^ file ^ ".dk"))
+        (Parsers.Parser.input_from_file (folder ^ file ^ ".dk"))
     in
     let md = Api.Env.get_name env in
     let _ =
       Printf.printf "We want to parse %s.\n" (Kernel.Basic.string_of_mident md)
     in
-    let deps = dep_of_file file in
+    let deps = dep_of_file folder file in
     let deps_files =
       List.filter
         (fun x ->
@@ -65,11 +71,17 @@ let rec parse_module dones_and_ctx file =
     let dones = file :: dones in
     let todo = List.filter (fun x -> x != file) todo in
     let dones, todo, ctx =
-      List.fold_left parse_module (dones, todo, ctx) deps_files
+      List.fold_left (parse_module folder) (dones, todo, ctx) deps_files
     in
-    let ctx = parse_file ctx file in
+    let ctx =
+      parse_file folder ctx file
+        (List.filter (fun x -> x <> "plth" && x <> "logic" && x <> file) deps)
+    in
     (dones, todo, ctx)
 
+let rec parse_all folder dones_and_ctx = function
+  | [] -> dones_and_ctx
+  | file :: files -> parse_all folder (parse_module folder dones_and_ctx file) files
 (*
 let main input_file =
   let _ = Api.Files.add_path "input/" in
@@ -88,14 +100,23 @@ let main input_file =
   List.iter (fun x -> Printf.printf "Require %s.\n\n" x) deps
 *)
 
-let main input_file =
+let main folder input_files =
   let _ = Printf.printf "\nBeginning.\n" in
-  let _ = Api.Files.add_path "input/euclid" in
+  let _ = Api.Files.add_path folder in
   let _ = Api.Files.add_path "input" in
-  parse_module ([], [ input_file ], []) input_file
+  parse_all folder ([], input_files, []) input_files
 
-let _ = main "euclidean__tactics"
-(*"input/euclid/lemma__equalitysymmetric.dk" *)
+
+
+
+let folder = Sys.argv.(1)
+
+let input_files = let list_files = Sys.readdir folder in
+  List.filter (fun x -> Filename.extension x = ".dk") (Array.to_list list_files)
+
+let _ = main folder (List.map Filename.remove_extension input_files)
+
+(*"input/euclid/lemma__equalityplth.eqsymmetric.dk" *)
 (*"euclidean__axioms"*)
 
 (*let deps = Deps.dep_of_entry [md; Kernel.Basic.mk_mident "plth"] x in *)
