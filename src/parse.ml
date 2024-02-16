@@ -95,9 +95,9 @@ let rec parse_proposition set_index name_assoc p =
   | T.Const (_, cst) when is_true cst -> Ast.True
   | T.Const (_, cst) when is_false cst -> Ast.False
   | T.Const (_, cst) -> Ast.GlobalProposition (pair_string_of_name cst)
-  | T.DB (_, id, _) ->
+  (*| T.DB (_, id, _) ->
       let var_name = B.string_of_ident id in
-      Ast.PropositionCst (List.assoc var_name name_assoc)
+      Ast.PropositionCst (List.assoc var_name name_assoc) *)
   | T.App (T.Const (_, cst), t1, [ t2 ]) when is_imp cst ->
       Ast.Implication
         ( parse_proposition set_index name_assoc t1,
