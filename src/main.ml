@@ -16,11 +16,26 @@ let rec parse_modules mds already_done = match mds with
     end
 *)
 
-let test file out ctx entry =
+let test1 file out ctx entry : Ast.global_context =
   let entry, context_entry = Parse.parse_entry file ctx entry in
-
   Printf.fprintf out "%s\n\n" (Coq.string_of_decl entry);
   context_entry :: ctx
+
+let test file out ctx entry : Ast._global_context =
+  let name, entry = New_parse.parse_entry file ctx entry in
+  Printf.fprintf out "%s\n\n" (Coq.string_of_decl (name, entry));
+  match entry with
+  | Ast.Set -> Ast.declare_global_set name ctx
+  | Ast.Axiom statement | Ast.Theorem (statement, _) ->
+      Ast.declare_global_hypothesis name statement ctx
+  | Ast.Element set -> Ast.declare_global_element name set ctx
+  | Ast.PredicateSymbol args_types ->
+      Ast.declare_global_predicate name args_types ctx
+  | Ast.Predicate (args, prop) -> Ast.define_global_predicate name args prop ctx
+  | Ast.FunctionSymbol (args_type, ret) ->
+      Ast.declare_global_function name args_type ret ctx
+  | Ast.Function (args, ret, el) ->
+      Ast.define_global_function name args ret el ctx
 
 let print_deps out deps =
   List.iter (Printf.fprintf out "Require Import %s.\n") deps;
@@ -51,8 +66,7 @@ let rec parse_module folder dones_and_ctx file =
   if List.mem file dones && not (List.mem file todo) then (dones, todo, ctx)
   else
     let env =
-      Api.Env.init
-        (Parsers.Parser.input_from_file (folder ^ file ^ ".dk"))
+      Api.Env.init (Parsers.Parser.input_from_file (folder ^ file ^ ".dk"))
     in
     let md = Api.Env.get_name env in
     let _ =
@@ -81,7 +95,8 @@ let rec parse_module folder dones_and_ctx file =
 
 let rec parse_all folder dones_and_ctx = function
   | [] -> dones_and_ctx
-  | file :: files -> parse_all folder (parse_module folder dones_and_ctx file) files
+  | file :: files ->
+      parse_all folder (parse_module folder dones_and_ctx file) files
 (*
 let main input_file =
   let _ = Api.Files.add_path "input/" in
@@ -104,14 +119,14 @@ let main folder input_files =
   let _ = Printf.printf "\nBeginning.\n" in
   let _ = Api.Files.add_path folder in
   let _ = Api.Files.add_path "input" in
-  parse_all folder ([], input_files, []) input_files
-
-
-
+  let _ = test1 in
+  (*parse_all folder ([], input_files, []) input_files *)
+  parse_all folder ([], input_files, Ast.empty_global_context) input_files
 
 let folder = Sys.argv.(1)
 
-let input_files = let list_files = Sys.readdir folder in
+let input_files =
+  let list_files = Sys.readdir folder in
   List.filter (fun x -> Filename.extension x = ".dk") (Array.to_list list_files)
 
 let _ = main folder (List.map Filename.remove_extension input_files)

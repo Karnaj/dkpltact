@@ -111,7 +111,7 @@ def ex_elim :
   P0:plth.Prop =>
   f:(x:(plth.El A) -> __:(plth.Prf (P x)) -> plth.Prf P0) => e:(plth.Prf (plth.ex A P)) => e P0 f.
 
-def eq__ind :
+def eq_ind :
   A:plth.Set ->
   x:(plth.El A) ->
   P:(__:(plth.El A) -> plth.Prop) ->
@@ -122,21 +122,21 @@ def eq__ind :
   P:(__:(plth.El A) -> plth.Prop) =>
   p:(plth.Prf (P x)) => y:(plth.El A) => pe:(plth.Prf (plth.eq A x y)) => pe P p.
 
-def eq__refl :
+def eq_refl :
   A:plth.Set -> x:(plth.El A) -> plth.Prf (plth.eq A x x)
   :=
   A:plth.Set => x:(plth.El A) => P:((plth.El A) -> plth.Prop) => H:(plth.Prf (P x)) => H.
 
-def eq__sym :
+def eq_sym :
   A:plth.Set ->
   x:(plth.El A) -> y:(plth.El A) -> __:(plth.Prf (plth.eq A x y)) -> plth.Prf (plth.eq A y x)
   :=
   A:plth.Set =>
   x:(plth.El A) =>
   y:(plth.El A) =>
-  H:(plth.Prf (plth.eq A x y)) => eq__ind A x (y0:(plth.El A) => plth.eq A y0 x) (eq__refl A x) y H.
+  H:(plth.Prf (plth.eq A x y)) => eq_ind A x (y0:(plth.El A) => plth.eq A y0 x) (eq_refl A x) y H.
 
-def eq__ind__r :
+def eq_ind_r :
   A:plth.Set ->
   x:(plth.El A) ->
   P:(__:(plth.El A) -> plth.Prop) ->
@@ -147,9 +147,9 @@ def eq__ind__r :
   P:(__:(plth.El A) -> plth.Prop) =>
   H:(plth.Prf (P x)) =>
   y:(plth.El A) =>
-  H0:(plth.Prf (plth.eq A y x)) => eq__ind A x (y0:(plth.El A) => P y0) H y (eq__sym A y x H0).
+  H0:(plth.Prf (plth.eq A y x)) => eq_ind A x (y0:(plth.El A) => P y0) H y (eq_sym A y x H0).
 
-def eq__trans :
+def eq_trans :
   A:plth.Set ->
   x:(plth.El A) ->
   y:(plth.El A) ->

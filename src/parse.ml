@@ -2,6 +2,49 @@ module T = Kernel.Term
 module B = Kernel.Basic
 module E = Parsers.Entry
 
+type name_manager = (char * int) list * (string * string) list
+
+let add_name (dk_name : string) (set : string * string) (manager : name_manager)
+    : string * name_manager =
+  let set_index, assoc = manager in
+  let set_initial = String.get (snd set) 0 in
+  match List.assoc_opt set_initial set_index with
+  | None ->
+      let new_name = Printf.sprintf "%c%d" set_initial 0 in
+      let assoc = (dk_name, new_name) :: List.remove_assoc dk_name assoc in
+      let set_index = (set_initial, 1) :: set_index in
+      (new_name, (set_index, assoc))
+  | Some i ->
+      let new_name = Printf.sprintf "%c%d" set_initial i in
+      let assoc = (dk_name, new_name) :: List.remove_assoc dk_name assoc in
+      let set_index = (set_initial, i + 1) :: set_index in
+      (new_name, (set_index, assoc))
+
+type context = name_manager * Ast.global_context * Ast.local_context
+
+let add_local (context : context) (dk_name : string) (set : string * string)
+    (_type : Ast.context_element) : context =
+  let manager, globals, locals = context in
+  let new_name, manager = add_name dk_name set manager in
+  let locals = (new_name, _type) :: List.remove_assoc new_name locals in
+  (manager, globals, locals)
+
+let get_local_name (dk_name : string) (context : context) : string option =
+  let (_, name_assoc), _, _ = context in
+  List.assoc_opt dk_name name_assoc
+
+let get_local_type (dk_name : string) (context : context) :
+    Ast.context_element option =
+  let _, _, locals = context in
+  match get_local_name dk_name context with
+  | None -> None
+  | Some x -> List.assoc_opt x locals
+
+let get_global_type (dk_name : string * string) (context : context) :
+    Ast.context_element option =
+  let _, globals, _ = context in
+  List.assoc_opt dk_name globals
+
 let get_new_name (set : string * string) (set_index : (char * int) list) =
   let set = String.get (snd set) 0 in
   match List.assoc_opt set set_index with
@@ -16,7 +59,7 @@ let get_new_name (set : string * string) (set_index : (char * int) list) =
       ( Printf.sprintf "%c%d" set i,
         (set, i + 1) :: List.remove_assoc set set_index )
 
-let id_name cst = B.string_of_ident @@ B.id cst
+let id_name cst = New_parse.id_name cst (* B.string_of_ident @@ B.id cst *)
 let md_name cst = B.string_of_mident @@ B.md cst
 let pair_string_of_name name = (md_name name, id_name name)
 let string_of_name f = md_name f ^ "." ^ id_name f
@@ -55,16 +98,11 @@ let is_and_elim_r name = logic_const name "and_elim_right"
 let is_and_ind name = logic_const name "and_ind"
 let is_and_ind_r name = logic_const name "and_ind_right"
 let is_and_ind_l name = logic_const name "and_ind_left"
-(*
-let is_and_ind_l name = logic_const name "and_ind_l"
-let is_and_ind_r name = logic_const name "and_ind_r"
-*)
-
-let is_eq_ind name = logic_const name "eq__ind"
-let is_eq_ind_r name = logic_const name "eq__ind__r"
-let is_eq_refl name = logic_const name "eq__refl"
-let is_eq_sym name = logic_const name "eq__sym"
-let is_eq_trans name = logic_const name "eq__trans"
+let is_eq_ind name = logic_const name "eq_ind"
+let is_eq_ind_r name = logic_const name "eq_ind_r"
+let is_eq_refl name = logic_const name "eq_refl"
+let is_eq_sym name = logic_const name "eq_sym"
+let is_eq_trans name = logic_const name "eq_trans"
 let is_I name = plth_const name "I"
 
 let rec parse_set_list predicate_name args =
@@ -74,9 +112,16 @@ let rec parse_set_list predicate_name args =
       pair_string_of_name set :: parse_set_list predicate_name arg
   | _ -> failwith ("Error ill-formed predicate " ^ predicate_name ^ ".")
 
+(* name_assoc associate each variable of dedukti to its name in the AST.
+   When an abstraction (id => t) is parsed, a fresh name x is associate
+   to id and when id is encountered while parsing t, it will be parsed
+   as x.
+*)
 let rec parse_element name_assoc x =
   match x with
-  | T.Const (_, cst) -> Ast.GlobalElementCst (pair_string_of_name cst)
+  | T.Const (_, cst) ->
+      let var_name = pair_string_of_name cst in
+      Ast.GlobalElementCst var_name
   | T.App (T.Const (_, f), t, args) ->
       let function_name = pair_string_of_name f in
       let args = List.map (parse_element name_assoc) (t :: args) in
@@ -89,15 +134,11 @@ let rec parse_element name_assoc x =
         "Error, an element is either a constant or the application of a symbol \
          function."
 
-
 let rec parse_proposition set_index name_assoc p =
   match p with
   | T.Const (_, cst) when is_true cst -> Ast.True
   | T.Const (_, cst) when is_false cst -> Ast.False
   | T.Const (_, cst) -> Ast.GlobalProposition (pair_string_of_name cst)
-  (*| T.DB (_, id, _) ->
-      let var_name = B.string_of_ident id in
-      Ast.PropositionCst (List.assoc var_name name_assoc) *)
   | T.App (T.Const (_, cst), t1, [ t2 ]) when is_imp cst ->
       Ast.Implication
         ( parse_proposition set_index name_assoc t1,
@@ -529,7 +570,7 @@ let rec parse_proof set_index name_assoc p ctx locals =
       let proof_eq, _ = parse_proof set_index name_assoc proof_eq ctx locals in
       parse_proof_with_other_args set_index name_assoc
         (Ast.EqElimR ((set, h1name, pred), x, y, hprf, proof, heq, proof_eq))
-        (Ast.instantiate h1name pred y)
+        (Ast.instantiate h1name pred x)
         ctx locals rest
   | T.App (T.Const (_, cst), T.Const (_, set_name), x :: rest)
     when is_eq_refl cst ->
@@ -570,28 +611,30 @@ let rec parse_proof set_index name_assoc p ctx locals =
         ctx locals rest
   | T.App
       (T.Lam (_, id, Some (T.App (_, statement, [])), prf), statement_prf, args)
-    ->
+    -> (
       let statement = parse_proposition set_index name_assoc statement in
       let id = B.string_of_ident id in
       let statement_proof, _ =
-      parse_proof set_index name_assoc statement_prf ctx locals
-      in begin match statement_proof with
-        (*| Ast.Assumption(v) -> 
+        parse_proof set_index name_assoc statement_prf ctx locals
+      in
+      match statement_proof with
+      (*| Ast.Assumption(v) ->
           let name_assoc1 = (id, v) :: List.remove_assoc id name_assoc in
           let locals1 = (id, Ast.HypothesisC statement) :: locals in
           let prf, result = parse_proof set_index name_assoc1 prf ctx locals1 in
-          parse_proof_with_other_args set_index name_assoc prf result ctx locals args  
-        (* Do the same with global assumption *)     
-            *)
-        | _ -> 
+          parse_proof_with_other_args set_index name_assoc prf result ctx locals args
+        (* Do the same with global assumption *)
+      *)
+      | _ ->
           let hname, set_index1 = get_new_name ("", "Hcut") set_index in
           let name_assoc1 = (id, hname) :: List.remove_assoc id name_assoc in
           let locals1 = (id, Ast.HypothesisC statement) :: locals in
-          let prf, result = parse_proof set_index1 name_assoc1 prf ctx locals1 in
+          let prf, result =
+            parse_proof set_index1 name_assoc1 prf ctx locals1
+          in
           parse_proof_with_other_args set_index name_assoc
-          (Ast.Cut (statement, statement_proof, hname, prf))
-          result ctx locals args
-    end
+            (Ast.Cut (statement, statement_proof, hname, prf))
+            result ctx locals args)
   | T.App (prf, arg, rest) ->
       let prf, p = parse_proof set_index name_assoc prf ctx locals in
       (*begin match p with
@@ -709,9 +752,9 @@ and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
       in
       let _, id, p = pred in
       (*Printf.printf "%s %s.\n" id (Coq.coq_string_of_prop p);
-      Printf.printf "inst with %s => %s.\n"
-        (Coq.string_of_coq_element (Coq.translate_element x))
-        (Coq.coq_string_of_prop (Ast.instantiate id p x)); *)
+        Printf.printf "inst with %s => %s.\n"
+          (Coq.string_of_coq_element (Coq.translate_element x))
+          (Coq.coq_string_of_prop (Ast.instantiate id p x)); *)
       match prf with
       | Ast.Apply (th, l) ->
           parse_proof_with_other_args set_index name_assoc
