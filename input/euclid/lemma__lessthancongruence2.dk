@@ -1,0 +1,69 @@
+thm lemma__lessthancongruence2 :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (E:(plth.El euclidean__axioms.Point) =>
+                    plth.forall
+                      euclidean__axioms.Point
+                      (F:(plth.El euclidean__axioms.Point) =>
+                       plth.imp
+                         (euclidean__defs.Lt A B C D)
+                         (plth.imp
+                            (euclidean__axioms.Cong A B E F)
+                            (euclidean__defs.Lt E F C D)))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.Lt A B C D)) =>
+  H0:(plth.Prf (euclidean__axioms.Cong A B E F)) =>
+  (H1:(plth.Prf
+         (plth.ex
+            euclidean__axioms.Point
+            (G:(plth.El euclidean__axioms.Point) =>
+             plth.and (euclidean__axioms.BetS C G D) (euclidean__axioms.Cong C G A B)))) =>
+   logic.ex_elim
+     euclidean__axioms.Point
+     (G:(plth.El euclidean__axioms.Point) =>
+      plth.and (euclidean__axioms.BetS C G D) (euclidean__axioms.Cong C G A B))
+     (euclidean__defs.Lt E F C D)
+     (G:(plth.El euclidean__axioms.Point) =>
+      H2:(plth.Prf (plth.and (euclidean__axioms.BetS C G D) (euclidean__axioms.Cong C G A B))) =>
+      logic.and_ind
+        (euclidean__axioms.BetS C G D)
+        (euclidean__axioms.Cong C G A B)
+        (euclidean__defs.Lt E F C D)
+        (H3:(plth.Prf (euclidean__axioms.BetS C G D)) =>
+         H4:(plth.Prf (euclidean__axioms.Cong C G A B)) =>
+         (H5:(plth.Prf (euclidean__axioms.Cong C G E F)) =>
+          (H6:(plth.Prf (euclidean__defs.Lt E F C D)) => H6)
+            (logic.ex_intro
+               euclidean__axioms.Point
+               (X:(plth.El euclidean__axioms.Point) =>
+                plth.and (euclidean__axioms.BetS C X D) (euclidean__axioms.Cong C X E F))
+               G
+               (logic.and_intro
+                  (euclidean__axioms.BetS C G D)
+                  (euclidean__axioms.Cong C G E F)
+                  H3
+                  H5)))
+           (lemma__congruencetransitive.lemma__congruencetransitive C G A B E F H4 H0))
+        H2)
+     H1)
+    H.
+

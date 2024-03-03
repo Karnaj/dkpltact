@@ -1,0 +1,62 @@
+thm lemma__PGflip :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.imp (euclidean__defs.PG A B C D) (euclidean__defs.PG B A D C))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.PG A B C D)) =>
+  (H0:(plth.Prf (plth.and (euclidean__defs.Par A B C D) (euclidean__defs.Par A D B C))) =>
+   (H1:(plth.Prf (euclidean__defs.Par B A D C)) =>
+    (H2:(plth.Prf (euclidean__defs.Par B C A D)) =>
+     (H3:(plth.Prf (euclidean__defs.PG B A D C)) => H3)
+       (logic.and_intro (euclidean__defs.Par B A D C) (euclidean__defs.Par B C A D) H1 H2))
+      (logic.and_ind_right
+         (euclidean__defs.Par A B C D)
+         (euclidean__defs.Par A D B C)
+         (euclidean__defs.Par B C A D)
+         (H3:(plth.Prf (euclidean__defs.Par A D B C)) =>
+          lemma__parallelsymmetric.lemma__parallelsymmetric A D B C H3)
+         H0))
+     (logic.and_ind_left
+        (euclidean__defs.Par A B C D)
+        (euclidean__defs.Par A D B C)
+        (euclidean__defs.Par B A D C)
+        (H1:(plth.Prf (euclidean__defs.Par A B C D)) =>
+         (H3:(plth.Prf
+                (plth.and
+                   (euclidean__defs.Par B A C D)
+                   (plth.and (euclidean__defs.Par A B D C) (euclidean__defs.Par B A D C)))) =>
+          logic.and_ind_right
+            (euclidean__defs.Par B A C D)
+            (plth.and (euclidean__defs.Par A B D C) (euclidean__defs.Par B A D C))
+            (euclidean__defs.Par B A D C)
+            (H5:(plth.Prf
+                   (plth.and (euclidean__defs.Par A B D C) (euclidean__defs.Par B A D C))) =>
+             logic.and_elim_right
+               (euclidean__defs.Par A B D C)
+               (euclidean__defs.Par B A D C)
+               H5)
+            H3)
+           (lemma__parallelflip.lemma__parallelflip A B C D H1))
+        H0))
+    ((H0:(plth.Prf (plth.and (euclidean__defs.Par A B C D) (euclidean__defs.Par A D B C))) =>
+      (__TmpHyp:(plth.Prf
+                   (plth.and (euclidean__defs.Par A B C D) (euclidean__defs.Par A D B C))) =>
+       __TmpHyp)
+        H0)
+       H).
+

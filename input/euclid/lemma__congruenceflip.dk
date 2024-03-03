@@ -1,0 +1,47 @@
+thm lemma__congruenceflip :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.imp
+                   (euclidean__axioms.Cong A B C D)
+                   (plth.and
+                      (euclidean__axioms.Cong B A D C)
+                      (plth.and
+                         (euclidean__axioms.Cong B A C D)
+                         (euclidean__axioms.Cong A B D C))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.Cong A B C D)) =>
+  (H0:(plth.Prf (euclidean__axioms.Cong B A A B)) =>
+   (H1:(plth.Prf (euclidean__axioms.Cong C D D C)) =>
+    (H2:(plth.Prf (euclidean__axioms.Cong B A C D)) =>
+     (H3:(plth.Prf (euclidean__axioms.Cong A B D C)) =>
+      (H4:(plth.Prf (euclidean__axioms.Cong B A D C)) =>
+       logic.and_intro
+         (euclidean__axioms.Cong B A D C)
+         (plth.and (euclidean__axioms.Cong B A C D) (euclidean__axioms.Cong A B D C))
+         H4
+         (logic.and_intro
+            (euclidean__axioms.Cong B A C D)
+            (euclidean__axioms.Cong A B D C)
+            H2
+            H3))
+        (lemma__congruencetransitive.lemma__congruencetransitive B A C D D C H2 H1))
+       (lemma__congruencetransitive.lemma__congruencetransitive A B C D D C H H1))
+      (lemma__congruencetransitive.lemma__congruencetransitive B A A B C D H0 H))
+     (euclidean__axioms.cn__equalityreverse C D))
+    (euclidean__axioms.cn__equalityreverse B A).
+

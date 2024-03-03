@@ -1,0 +1,144 @@
+thm lemma__collinear5 :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (E:(plth.El euclidean__axioms.Point) =>
+                    plth.imp
+                      (plth.neq euclidean__axioms.Point A B)
+                      (plth.imp
+                         (euclidean__axioms.Col A B C)
+                         (plth.imp
+                            (euclidean__axioms.Col A B D)
+                            (plth.imp
+                               (euclidean__axioms.Col A B E)
+                               (euclidean__axioms.Col C D E))))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (plth.neq euclidean__axioms.Point A B)) =>
+  H0:(plth.Prf (euclidean__axioms.Col A B C)) =>
+  H1:(plth.Prf (euclidean__axioms.Col A B D)) =>
+  H2:(plth.Prf (euclidean__axioms.Col A B E)) =>
+  (H3:(plth.Prf (euclidean__axioms.Col B C D)) =>
+   (H4:(plth.Prf (euclidean__axioms.Col B C E)) =>
+    (H5:(plth.Prf (euclidean__axioms.Col C D E)) => H5)
+      ((H5:(plth.Prf
+              (plth.or
+                 (plth.neq euclidean__axioms.Point B C)
+                 (plth.eq euclidean__axioms.Point B C))) =>
+        (H6:(plth.Prf
+               (plth.or
+                  (plth.neq euclidean__axioms.Point B C)
+                  (plth.eq euclidean__axioms.Point B C))) =>
+         (__TmpHyp:(plth.Prf
+                      (plth.or
+                         (plth.neq euclidean__axioms.Point B C)
+                         (plth.eq euclidean__axioms.Point B C))) =>
+          logic.or_elim
+            (plth.neq euclidean__axioms.Point B C)
+            (plth.eq euclidean__axioms.Point B C)
+            (euclidean__axioms.Col C D E)
+            (H7:(plth.Prf (plth.neq euclidean__axioms.Point B C)) =>
+             (H8:(plth.Prf (euclidean__axioms.Col C D E)) => H8)
+               (euclidean__tactics.not__nCol__Col
+                  C
+                  D
+                  E
+                  (H8:(plth.Prf (euclidean__axioms.nCol C D E)) =>
+                   euclidean__tactics.Col__nCol__False
+                     C
+                     D
+                     E
+                     H8
+                     (lemma__collinear4.lemma__collinear4 B C D E H3 H4 H7))))
+            (H7:(plth.Prf (plth.eq euclidean__axioms.Point B C)) =>
+             (H8:(plth.Prf (euclidean__axioms.Col B D E)) =>
+              (H9:(plth.Prf (euclidean__axioms.Col C D E)) => H9)
+                (logic.eq_ind_r
+                   euclidean__axioms.Point
+                   C
+                   (B0:(plth.El euclidean__axioms.Point) =>
+                    plth.imp
+                      (plth.neq euclidean__axioms.Point A B0)
+                      (plth.imp
+                         (euclidean__axioms.Col A B0 C)
+                         (plth.imp
+                            (euclidean__axioms.Col A B0 D)
+                            (plth.imp
+                               (euclidean__axioms.Col A B0 E)
+                               (plth.imp
+                                  (euclidean__axioms.Col B0 C D)
+                                  (plth.imp
+                                     (euclidean__axioms.Col B0 C E)
+                                     (plth.imp
+                                        (euclidean__axioms.Col B0 D E)
+                                        (euclidean__axioms.Col C D E))))))))
+                   (H9:(plth.Prf (plth.neq euclidean__axioms.Point A C)) =>
+                    H10:(plth.Prf (euclidean__axioms.Col A C C)) =>
+                    H11:(plth.Prf (euclidean__axioms.Col A C D)) =>
+                    H12:(plth.Prf (euclidean__axioms.Col A C E)) =>
+                    H13:(plth.Prf (euclidean__axioms.Col C C D)) =>
+                    H14:(plth.Prf (euclidean__axioms.Col C C E)) =>
+                    H15:(plth.Prf (euclidean__axioms.Col C D E)) => H15)
+                   B
+                   H7
+                   H
+                   H0
+                   H1
+                   H2
+                   H3
+                   H4
+                   H8))
+               (euclidean__tactics.not__nCol__Col
+                  B
+                  D
+                  E
+                  (H8:(plth.Prf (euclidean__axioms.nCol B D E)) =>
+                   euclidean__tactics.Col__nCol__False
+                     B
+                     D
+                     E
+                     H8
+                     (lemma__collinear4.lemma__collinear4 A B D E H1 H2 H))))
+            __TmpHyp)
+           H6)
+          H5)
+         (euclidean__tactics.neq__or__eq B C)))
+     (euclidean__tactics.not__nCol__Col
+        B
+        C
+        E
+        (H4:(plth.Prf (euclidean__axioms.nCol B C E)) =>
+         euclidean__tactics.Col__nCol__False
+           B
+           C
+           E
+           H4
+           (lemma__collinear4.lemma__collinear4 A B C E H0 H2 H))))
+    (euclidean__tactics.not__nCol__Col
+       B
+       C
+       D
+       (H3:(plth.Prf (euclidean__axioms.nCol B C D)) =>
+        euclidean__tactics.Col__nCol__False
+          B
+          C
+          D
+          H3
+          (lemma__collinear4.lemma__collinear4 A B C D H0 H1 H))).
+

@@ -1,0 +1,87 @@
+thm lemma__trichotomy2 :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.imp (euclidean__defs.Lt A B C D) (plth.not (euclidean__defs.Lt C D A B)))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.Lt A B C D)) =>
+  (H0:(plth.Prf
+         (plth.ex
+            euclidean__axioms.Point
+            (E:(plth.El euclidean__axioms.Point) =>
+             plth.and (euclidean__axioms.BetS C E D) (euclidean__axioms.Cong C E A B)))) =>
+   logic.ex_elim
+     euclidean__axioms.Point
+     (E:(plth.El euclidean__axioms.Point) =>
+      plth.and (euclidean__axioms.BetS C E D) (euclidean__axioms.Cong C E A B))
+     (plth.not (euclidean__defs.Lt C D A B))
+     (E:(plth.El euclidean__axioms.Point) =>
+      H1:(plth.Prf (plth.and (euclidean__axioms.BetS C E D) (euclidean__axioms.Cong C E A B))) =>
+      logic.and_ind
+        (euclidean__axioms.BetS C E D)
+        (euclidean__axioms.Cong C E A B)
+        (plth.not (euclidean__defs.Lt C D A B))
+        (H2:(plth.Prf (euclidean__axioms.BetS C E D)) =>
+         H3:(plth.Prf (euclidean__axioms.Cong C E A B)) =>
+         (H4:(plth.Prf (euclidean__axioms.Cong A B C E)) =>
+          (H5:(plth.Prf (plth.not (euclidean__defs.Lt C D A B))) => H5)
+            (H5:(plth.Prf (euclidean__defs.Lt C D A B)) =>
+             (H6:(plth.Prf (euclidean__defs.Lt C D C E)) =>
+              (H7:(plth.Prf
+                     (plth.ex
+                        euclidean__axioms.Point
+                        (F:(plth.El euclidean__axioms.Point) =>
+                         plth.and
+                           (euclidean__axioms.BetS C F E)
+                           (euclidean__axioms.Cong C F C D)))) =>
+               logic.ex_elim
+                 euclidean__axioms.Point
+                 (F:(plth.El euclidean__axioms.Point) =>
+                  plth.and
+                    (euclidean__axioms.BetS C F E)
+                    (euclidean__axioms.Cong C F C D))
+                 plth.false
+                 (F:(plth.El euclidean__axioms.Point) =>
+                  H8:(plth.Prf
+                        (plth.and
+                           (euclidean__axioms.BetS C F E)
+                           (euclidean__axioms.Cong C F C D))) =>
+                  logic.and_ind
+                    (euclidean__axioms.BetS C F E)
+                    (euclidean__axioms.Cong C F C D)
+                    plth.false
+                    (H9:(plth.Prf (euclidean__axioms.BetS C F E)) =>
+                     H10:(plth.Prf (euclidean__axioms.Cong C F C D)) =>
+                     (H11:(plth.Prf (euclidean__axioms.BetS C F D)) =>
+                      (H12:(plth.Prf
+                              (plth.not (euclidean__axioms.Cong C F C D))) =>
+                       H12 H10)
+                        (lemma__partnotequalwhole.lemma__partnotequalwhole
+                           C
+                           F
+                           D
+                           H11))
+                       (lemma__3__6b.lemma__3__6b C F E D H9 H2))
+                    H8)
+                 H7)
+                H6)
+               (lemma__lessthancongruence.lemma__lessthancongruence C D A B C E H5 H4)))
+           (lemma__congruencesymmetric.lemma__congruencesymmetric A C E B H3))
+        H1)
+     H0)
+    H.
+

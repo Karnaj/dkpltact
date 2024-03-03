@@ -1,0 +1,152 @@
+thm lemma__equalanglesflip :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (E:(plth.El euclidean__axioms.Point) =>
+                    plth.forall
+                      euclidean__axioms.Point
+                      (F:(plth.El euclidean__axioms.Point) =>
+                       plth.imp
+                         (euclidean__defs.CongA A B C D E F)
+                         (euclidean__defs.CongA C B A F E D))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.CongA A B C D E F)) =>
+  (H0:(plth.Prf (euclidean__axioms.nCol D E F)) =>
+   (H1:(plth.Prf (euclidean__defs.CongA D E F A B C)) =>
+    (H2:(plth.Prf (euclidean__axioms.nCol A B C)) =>
+     (H3:(plth.Prf (plth.not (euclidean__axioms.Col C B A))) =>
+      (H4:(plth.Prf (euclidean__defs.CongA C B A A B C)) =>
+       (H5:(plth.Prf (euclidean__defs.CongA C B A D E F)) =>
+        (H6:(plth.Prf (euclidean__defs.CongA D E F F E D)) =>
+         (H7:(plth.Prf (euclidean__defs.CongA C B A F E D)) => H7)
+           (lemma__equalanglestransitive.lemma__equalanglestransitive
+              C
+              B
+              A
+              D
+              E
+              F
+              F
+              E
+              D
+              H5
+              H6))
+          (lemma__ABCequalsCBA.lemma__ABCequalsCBA D E F H0))
+         (lemma__equalanglestransitive.lemma__equalanglestransitive
+            C
+            B
+            A
+            A
+            B
+            C
+            D
+            E
+            F
+            H4
+            H))
+        (lemma__ABCequalsCBA.lemma__ABCequalsCBA
+           C
+           B
+           A
+           (euclidean__tactics.nCol__notCol C B A H3)))
+       (H3:(plth.Prf (euclidean__axioms.Col C B A)) =>
+        (H4:(plth.Prf (euclidean__axioms.Col A B C)) =>
+         euclidean__tactics.Col__nCol__False A B C H2 H4)
+          ((H4:(plth.Prf
+                  (plth.and
+                     (euclidean__axioms.Col B C A)
+                     (plth.and
+                        (euclidean__axioms.Col B A C)
+                        (plth.and
+                           (euclidean__axioms.Col A C B)
+                           (plth.and
+                              (euclidean__axioms.Col C A B)
+                              (euclidean__axioms.Col A B C)))))) =>
+            logic.and_ind_right
+              (euclidean__axioms.Col B C A)
+              (plth.and
+                 (euclidean__axioms.Col B A C)
+                 (plth.and
+                    (euclidean__axioms.Col A C B)
+                    (plth.and
+                       (euclidean__axioms.Col C A B)
+                       (euclidean__axioms.Col A B C))))
+              (euclidean__axioms.Col A B C)
+              (H6:(plth.Prf
+                     (plth.and
+                        (euclidean__axioms.Col B A C)
+                        (plth.and
+                           (euclidean__axioms.Col A C B)
+                           (plth.and
+                              (euclidean__axioms.Col C A B)
+                              (euclidean__axioms.Col A B C))))) =>
+               logic.and_ind_right
+                 (euclidean__axioms.Col B A C)
+                 (plth.and
+                    (euclidean__axioms.Col A C B)
+                    (plth.and
+                       (euclidean__axioms.Col C A B)
+                       (euclidean__axioms.Col A B C)))
+                 (euclidean__axioms.Col A B C)
+                 (H8:(plth.Prf
+                        (plth.and
+                           (euclidean__axioms.Col A C B)
+                           (plth.and
+                              (euclidean__axioms.Col C A B)
+                              (euclidean__axioms.Col A B C)))) =>
+                  logic.and_ind_right
+                    (euclidean__axioms.Col A C B)
+                    (plth.and
+                       (euclidean__axioms.Col C A B)
+                       (euclidean__axioms.Col A B C))
+                    (euclidean__axioms.Col A B C)
+                    (H10:(plth.Prf
+                            (plth.and
+                               (euclidean__axioms.Col C A B)
+                               (euclidean__axioms.Col A B C))) =>
+                     logic.and_elim_right
+                       (euclidean__axioms.Col C A B)
+                       (euclidean__axioms.Col A B C)
+                       H10)
+                    H8)
+                 H6)
+              H4)
+             (lemma__collinearorder.lemma__collinearorder C B A H3))))
+      (euclidean__tactics.nCol__notCol
+         A
+         B
+         C
+         (euclidean__tactics.nCol__not__Col
+            A
+            B
+            C
+            (lemma__equalanglesNC.lemma__equalanglesNC D E F A B C H1))))
+     (lemma__equalanglessymmetric.lemma__equalanglessymmetric A B C D E F H))
+    (euclidean__tactics.nCol__notCol
+       D
+       E
+       F
+       (euclidean__tactics.nCol__not__Col
+          D
+          E
+          F
+          (lemma__equalanglesNC.lemma__equalanglesNC A B C D E F H))).
+

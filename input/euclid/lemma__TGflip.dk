@@ -1,0 +1,362 @@
+thm lemma__TGflip :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (a:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (b:(plth.El euclidean__axioms.Point) =>
+                    plth.forall
+                      euclidean__axioms.Point
+                      (c:(plth.El euclidean__axioms.Point) =>
+                       plth.imp
+                         (euclidean__defs.TG A a B b C c)
+                         (plth.and
+                            (euclidean__defs.TG a A B b C c)
+                            (euclidean__defs.TG A a B b c C)))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  a:(plth.El euclidean__axioms.Point) =>
+  b:(plth.El euclidean__axioms.Point) =>
+  c:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.TG A a B b C c)) =>
+  (H0:(plth.Prf
+         (plth.ex
+            euclidean__axioms.Point
+            (H0:(plth.El euclidean__axioms.Point) =>
+             plth.and
+               (euclidean__axioms.BetS A a H0)
+               (plth.and (euclidean__axioms.Cong a H0 B b) (euclidean__defs.Lt C c A H0))))) =>
+   logic.ex_elim
+     euclidean__axioms.Point
+     (H1:(plth.El euclidean__axioms.Point) =>
+      plth.and
+        (euclidean__axioms.BetS A a H1)
+        (plth.and (euclidean__axioms.Cong a H1 B b) (euclidean__defs.Lt C c A H1)))
+     (plth.and (euclidean__defs.TG a A B b C c) (euclidean__defs.TG A a B b c C))
+     (H1:(plth.El euclidean__axioms.Point) =>
+      H2:(plth.Prf
+            (plth.and
+               (euclidean__axioms.BetS A a H1)
+               (plth.and (euclidean__axioms.Cong a H1 B b) (euclidean__defs.Lt C c A H1)))) =>
+      logic.and_ind
+        (euclidean__axioms.BetS A a H1)
+        (plth.and (euclidean__axioms.Cong a H1 B b) (euclidean__defs.Lt C c A H1))
+        (plth.and (euclidean__defs.TG a A B b C c) (euclidean__defs.TG A a B b c C))
+        (H3:(plth.Prf (euclidean__axioms.BetS A a H1)) =>
+         H4:(plth.Prf
+               (plth.and (euclidean__axioms.Cong a H1 B b) (euclidean__defs.Lt C c A H1))) =>
+         logic.and_ind
+           (euclidean__axioms.Cong a H1 B b)
+           (euclidean__defs.Lt C c A H1)
+           (plth.and (euclidean__defs.TG a A B b C c) (euclidean__defs.TG A a B b c C))
+           (H5:(plth.Prf (euclidean__axioms.Cong a H1 B b)) =>
+            H6:(plth.Prf (euclidean__defs.Lt C c A H1)) =>
+            (H7:(plth.Prf (plth.neq euclidean__axioms.Point A a)) =>
+             (H8:(plth.Prf (plth.neq euclidean__axioms.Point a A)) =>
+              (H9:(plth.Prf (plth.neq euclidean__axioms.Point a H1)) =>
+               (H10:(plth.Prf (plth.neq euclidean__axioms.Point B b)) =>
+                (H11:(plth.Prf
+                        (plth.ex
+                           euclidean__axioms.Point
+                           (h:(plth.El euclidean__axioms.Point) =>
+                            plth.and
+                              (euclidean__axioms.BetS a A h)
+                              (euclidean__axioms.Cong A h B b)))) =>
+                 logic.ex_elim
+                   euclidean__axioms.Point
+                   (h:(plth.El euclidean__axioms.Point) =>
+                    plth.and
+                      (euclidean__axioms.BetS a A h)
+                      (euclidean__axioms.Cong A h B b))
+                   (plth.and
+                      (euclidean__defs.TG a A B b C c)
+                      (euclidean__defs.TG A a B b c C))
+                   (h:(plth.El euclidean__axioms.Point) =>
+                    H12:(plth.Prf
+                           (plth.and
+                              (euclidean__axioms.BetS a A h)
+                              (euclidean__axioms.Cong A h B b))) =>
+                    logic.and_ind
+                      (euclidean__axioms.BetS a A h)
+                      (euclidean__axioms.Cong A h B b)
+                      (plth.and
+                         (euclidean__defs.TG a A B b C c)
+                         (euclidean__defs.TG A a B b c C))
+                      (H13:(plth.Prf (euclidean__axioms.BetS a A h)) =>
+                       H14:(plth.Prf (euclidean__axioms.Cong A h B b)) =>
+                       (H15:(plth.Prf (euclidean__axioms.Cong A a a A)) =>
+                        (H16:(plth.Prf
+                                (euclidean__axioms.Cong B b A h)) =>
+                         (H17:(plth.Prf
+                                 (euclidean__axioms.Cong a H1 A h)) =>
+                          (H18:(plth.Prf
+                                  (euclidean__axioms.Cong
+                                     A
+                                     H1
+                                     a
+                                     h)) =>
+                           (H19:(plth.Prf
+                                   (euclidean__defs.Lt
+                                      C
+                                      c
+                                      a
+                                      h)) =>
+                            (H20:(plth.Prf
+                                    (euclidean__defs.TG
+                                       a
+                                       A
+                                       B
+                                       b
+                                       C
+                                       c)) =>
+                             (H21:(plth.Prf
+                                     (euclidean__axioms.Cong
+                                        C
+                                        c
+                                        c
+                                        C)) =>
+                              (H22:(plth.Prf
+                                      (euclidean__defs.Lt
+                                         c
+                                         C
+                                         A
+                                         H1)) =>
+                               (H23:(plth.Prf
+                                       (euclidean__defs.TG
+                                          A
+                                          a
+                                          B
+                                          b
+                                          c
+                                          C)) =>
+                                (H24:(plth.Prf
+                                        (euclidean__defs.Lt
+                                           C
+                                           c
+                                           a
+                                           h)) =>
+                                 logic.and_intro
+                                   (euclidean__defs.TG
+                                      a
+                                      A
+                                      B
+                                      b
+                                      C
+                                      c)
+                                   (euclidean__defs.TG
+                                      A
+                                      a
+                                      B
+                                      b
+                                      c
+                                      C)
+                                   H20
+                                   H23)
+                                  H19)
+                                 (logic.ex_intro
+                                    euclidean__axioms.Point
+                                    (X:(plth.El
+                                          euclidean__axioms.Point) =>
+                                     plth.and
+                                       (euclidean__axioms.BetS
+                                          A
+                                          a
+                                          X)
+                                       (plth.and
+                                          (euclidean__axioms.Cong
+                                             a
+                                             X
+                                             B
+                                             b)
+                                          (euclidean__defs.Lt
+                                             c
+                                             C
+                                             A
+                                             X)))
+                                    H1
+                                    (logic.and_intro
+                                       (euclidean__axioms.BetS
+                                          A
+                                          a
+                                          H1)
+                                       (plth.and
+                                          (euclidean__axioms.Cong
+                                             a
+                                             H1
+                                             B
+                                             b)
+                                          (euclidean__defs.Lt
+                                             c
+                                             C
+                                             A
+                                             H1))
+                                       H3
+                                       (logic.and_intro
+                                          (euclidean__axioms.Cong
+                                             a
+                                             H1
+                                             B
+                                             b)
+                                          (euclidean__defs.Lt
+                                             c
+                                             C
+                                             A
+                                             H1)
+                                          H5
+                                          H22))))
+                                (lemma__lessthancongruence2.lemma__lessthancongruence2
+                                   C
+                                   c
+                                   A
+                                   H1
+                                   c
+                                   C
+                                   H6
+                                   H21))
+                               (euclidean__axioms.cn__equalityreverse
+                                  C
+                                  c))
+                              (logic.ex_intro
+                                 euclidean__axioms.Point
+                                 (X:(plth.El
+                                       euclidean__axioms.Point) =>
+                                  plth.and
+                                    (euclidean__axioms.BetS
+                                       a
+                                       A
+                                       X)
+                                    (plth.and
+                                       (euclidean__axioms.Cong
+                                          A
+                                          X
+                                          B
+                                          b)
+                                       (euclidean__defs.Lt
+                                          C
+                                          c
+                                          a
+                                          X)))
+                                 h
+                                 (logic.and_intro
+                                    (euclidean__axioms.BetS
+                                       a
+                                       A
+                                       h)
+                                    (plth.and
+                                       (euclidean__axioms.Cong
+                                          A
+                                          h
+                                          B
+                                          b)
+                                       (euclidean__defs.Lt
+                                          C
+                                          c
+                                          a
+                                          h))
+                                    H13
+                                    (logic.and_intro
+                                       (euclidean__axioms.Cong
+                                          A
+                                          h
+                                          B
+                                          b)
+                                       (euclidean__defs.Lt
+                                          C
+                                          c
+                                          a
+                                          h)
+                                       H14
+                                       H19))))
+                             (lemma__lessthancongruence.lemma__lessthancongruence
+                                C
+                                c
+                                A
+                                H1
+                                a
+                                h
+                                H6
+                                H18))
+                            (euclidean__axioms.cn__sumofparts
+                               A
+                               a
+                               H1
+                               a
+                               A
+                               h
+                               H15
+                               H17
+                               H3
+                               H13))
+                           (lemma__congruencetransitive.lemma__congruencetransitive
+                              a
+                              H1
+                              B
+                              b
+                              A
+                              h
+                              H5
+                              H16))
+                          (lemma__congruencesymmetric.lemma__congruencesymmetric
+                             B
+                             A
+                             h
+                             b
+                             H14))
+                         (euclidean__axioms.cn__equalityreverse A a))
+                      H12)
+                   H11)
+                  (lemma__extension.lemma__extension a A B b H8 H10))
+                 (euclidean__axioms.axiom__nocollapse a H1 B b H9 H5))
+                ((H9:(plth.Prf
+                        (plth.and
+                           (plth.neq euclidean__axioms.Point a H1)
+                           (plth.and
+                              (plth.neq euclidean__axioms.Point A a)
+                              (plth.neq euclidean__axioms.Point A H1)))) =>
+                  logic.and_elim_left
+                    (plth.neq euclidean__axioms.Point a H1)
+                    (plth.and
+                       (plth.neq euclidean__axioms.Point A a)
+                       (plth.neq euclidean__axioms.Point A H1))
+                    H9)
+                   (lemma__betweennotequal.lemma__betweennotequal A a H1 H3)))
+               (lemma__inequalitysymmetric.lemma__inequalitysymmetric A a H7))
+              ((H7:(plth.Prf
+                      (plth.and
+                         (plth.neq euclidean__axioms.Point a H1)
+                         (plth.and
+                            (plth.neq euclidean__axioms.Point A a)
+                            (plth.neq euclidean__axioms.Point A H1)))) =>
+                logic.and_ind_right
+                  (plth.neq euclidean__axioms.Point a H1)
+                  (plth.and
+                     (plth.neq euclidean__axioms.Point A a)
+                     (plth.neq euclidean__axioms.Point A H1))
+                  (plth.neq euclidean__axioms.Point A a)
+                  (H9:(plth.Prf
+                         (plth.and
+                            (plth.neq euclidean__axioms.Point A a)
+                            (plth.neq euclidean__axioms.Point A H1))) =>
+                   logic.and_elim_left
+                     (plth.neq euclidean__axioms.Point A a)
+                     (plth.neq euclidean__axioms.Point A H1)
+                     H9)
+                  H7)
+                 (lemma__betweennotequal.lemma__betweennotequal A a H1 H3)))
+           H4)
+        H2)
+     H0)
+    H.
+

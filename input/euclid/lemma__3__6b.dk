@@ -1,0 +1,33 @@
+thm lemma__3__6b :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.imp
+                   (euclidean__axioms.BetS A B C)
+                   (plth.imp (euclidean__axioms.BetS A C D) (euclidean__axioms.BetS A B D)))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.BetS A B C)) =>
+  H0:(plth.Prf (euclidean__axioms.BetS A C D)) =>
+  (H1:(plth.Prf (euclidean__axioms.BetS C B A)) =>
+   (H2:(plth.Prf (euclidean__axioms.BetS D C A)) =>
+    (H3:(plth.Prf (euclidean__axioms.BetS D B A)) =>
+     (H4:(plth.Prf (euclidean__axioms.BetS A B D)) => H4)
+       (euclidean__axioms.axiom__betweennesssymmetry D B A H3))
+      (lemma__3__5b.lemma__3__5b D C B A H2 H1))
+     (euclidean__axioms.axiom__betweennesssymmetry A C D H0))
+    (euclidean__axioms.axiom__betweennesssymmetry A B C H).
+

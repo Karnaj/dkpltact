@@ -1,0 +1,319 @@
+thm lemma__NCorder :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.imp
+                (euclidean__axioms.nCol A B C)
+                (plth.and
+                   (euclidean__axioms.nCol B A C)
+                   (plth.and
+                      (euclidean__axioms.nCol B C A)
+                      (plth.and
+                         (euclidean__axioms.nCol C A B)
+                         (plth.and
+                            (euclidean__axioms.nCol A C B)
+                            (euclidean__axioms.nCol C B A)))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.nCol A B C)) =>
+  (H0:(plth.Prf (plth.not (euclidean__axioms.Col B A C))) =>
+   (H1:(plth.Prf (plth.not (euclidean__axioms.Col B C A))) =>
+    (H2:(plth.Prf (plth.not (euclidean__axioms.Col C A B))) =>
+     (H3:(plth.Prf (plth.not (euclidean__axioms.Col A C B))) =>
+      (H4:(plth.Prf (plth.not (euclidean__axioms.Col C B A))) =>
+       logic.and_intro
+         (euclidean__axioms.nCol B A C)
+         (plth.and
+            (euclidean__axioms.nCol B C A)
+            (plth.and
+               (euclidean__axioms.nCol C A B)
+               (plth.and
+                  (euclidean__axioms.nCol A C B)
+                  (euclidean__axioms.nCol C B A))))
+         (euclidean__tactics.nCol__notCol B A C H0)
+         (logic.and_intro
+            (euclidean__axioms.nCol B C A)
+            (plth.and
+               (euclidean__axioms.nCol C A B)
+               (plth.and
+                  (euclidean__axioms.nCol A C B)
+                  (euclidean__axioms.nCol C B A)))
+            (euclidean__tactics.nCol__notCol B C A H1)
+            (logic.and_intro
+               (euclidean__axioms.nCol C A B)
+               (plth.and
+                  (euclidean__axioms.nCol A C B)
+                  (euclidean__axioms.nCol C B A))
+               (euclidean__tactics.nCol__notCol C A B H2)
+               (logic.and_intro
+                  (euclidean__axioms.nCol A C B)
+                  (euclidean__axioms.nCol C B A)
+                  (euclidean__tactics.nCol__notCol A C B H3)
+                  (euclidean__tactics.nCol__notCol C B A H4)))))
+        (H4:(plth.Prf (euclidean__axioms.Col C B A)) =>
+         (H5:(plth.Prf (euclidean__axioms.Col A B C)) =>
+          H0
+            (euclidean__tactics.not__nCol__Col
+               B
+               A
+               C
+               (H6:(plth.Prf (euclidean__axioms.nCol B A C)) =>
+                euclidean__tactics.Col__nCol__False A B C H H5)))
+           ((H5:(plth.Prf
+                   (plth.and
+                      (euclidean__axioms.Col B C A)
+                      (plth.and
+                         (euclidean__axioms.Col B A C)
+                         (plth.and
+                            (euclidean__axioms.Col A C B)
+                            (plth.and
+                               (euclidean__axioms.Col C A B)
+                               (euclidean__axioms.Col A B C)))))) =>
+             logic.and_ind_right
+               (euclidean__axioms.Col B C A)
+               (plth.and
+                  (euclidean__axioms.Col B A C)
+                  (plth.and
+                     (euclidean__axioms.Col A C B)
+                     (plth.and
+                        (euclidean__axioms.Col C A B)
+                        (euclidean__axioms.Col A B C))))
+               (euclidean__axioms.Col A B C)
+               (H7:(plth.Prf
+                      (plth.and
+                         (euclidean__axioms.Col B A C)
+                         (plth.and
+                            (euclidean__axioms.Col A C B)
+                            (plth.and
+                               (euclidean__axioms.Col C A B)
+                               (euclidean__axioms.Col A B C))))) =>
+                logic.and_ind_right
+                  (euclidean__axioms.Col B A C)
+                  (plth.and
+                     (euclidean__axioms.Col A C B)
+                     (plth.and
+                        (euclidean__axioms.Col C A B)
+                        (euclidean__axioms.Col A B C)))
+                  (euclidean__axioms.Col A B C)
+                  (H9:(plth.Prf
+                         (plth.and
+                            (euclidean__axioms.Col A C B)
+                            (plth.and
+                               (euclidean__axioms.Col C A B)
+                               (euclidean__axioms.Col A B C)))) =>
+                   logic.and_ind_right
+                     (euclidean__axioms.Col A C B)
+                     (plth.and
+                        (euclidean__axioms.Col C A B)
+                        (euclidean__axioms.Col A B C))
+                     (euclidean__axioms.Col A B C)
+                     (H11:(plth.Prf
+                             (plth.and
+                                (euclidean__axioms.Col C A B)
+                                (euclidean__axioms.Col A B C))) =>
+                      logic.and_elim_right
+                        (euclidean__axioms.Col C A B)
+                        (euclidean__axioms.Col A B C)
+                        H11)
+                     H9)
+                  H7)
+               H5)
+              (lemma__collinearorder.lemma__collinearorder C B A H4))))
+       (H3:(plth.Prf (euclidean__axioms.Col A C B)) =>
+        (H4:(plth.Prf (euclidean__axioms.Col A B C)) =>
+         H0
+           (euclidean__tactics.not__nCol__Col
+              B
+              A
+              C
+              (H5:(plth.Prf (euclidean__axioms.nCol B A C)) =>
+               euclidean__tactics.Col__nCol__False A B C H H4)))
+          ((H4:(plth.Prf
+                  (plth.and
+                     (euclidean__axioms.Col C A B)
+                     (plth.and
+                        (euclidean__axioms.Col C B A)
+                        (plth.and
+                           (euclidean__axioms.Col B A C)
+                           (plth.and
+                              (euclidean__axioms.Col A B C)
+                              (euclidean__axioms.Col B C A)))))) =>
+            logic.and_ind_right
+              (euclidean__axioms.Col C A B)
+              (plth.and
+                 (euclidean__axioms.Col C B A)
+                 (plth.and
+                    (euclidean__axioms.Col B A C)
+                    (plth.and
+                       (euclidean__axioms.Col A B C)
+                       (euclidean__axioms.Col B C A))))
+              (euclidean__axioms.Col A B C)
+              (H6:(plth.Prf
+                     (plth.and
+                        (euclidean__axioms.Col C B A)
+                        (plth.and
+                           (euclidean__axioms.Col B A C)
+                           (plth.and
+                              (euclidean__axioms.Col A B C)
+                              (euclidean__axioms.Col B C A))))) =>
+               logic.and_ind_right
+                 (euclidean__axioms.Col C B A)
+                 (plth.and
+                    (euclidean__axioms.Col B A C)
+                    (plth.and
+                       (euclidean__axioms.Col A B C)
+                       (euclidean__axioms.Col B C A)))
+                 (euclidean__axioms.Col A B C)
+                 (H8:(plth.Prf
+                        (plth.and
+                           (euclidean__axioms.Col B A C)
+                           (plth.and
+                              (euclidean__axioms.Col A B C)
+                              (euclidean__axioms.Col B C A)))) =>
+                  logic.and_ind_right
+                    (euclidean__axioms.Col B A C)
+                    (plth.and
+                       (euclidean__axioms.Col A B C)
+                       (euclidean__axioms.Col B C A))
+                    (euclidean__axioms.Col A B C)
+                    (H10:(plth.Prf
+                            (plth.and
+                               (euclidean__axioms.Col A B C)
+                               (euclidean__axioms.Col B C A))) =>
+                     logic.and_elim_left
+                       (euclidean__axioms.Col A B C)
+                       (euclidean__axioms.Col B C A)
+                       H10)
+                    H8)
+                 H6)
+              H4)
+             (lemma__collinearorder.lemma__collinearorder A C B H3))))
+      (H2:(plth.Prf (euclidean__axioms.Col C A B)) =>
+       (H3:(plth.Prf (euclidean__axioms.Col A B C)) =>
+        H0
+          (euclidean__tactics.not__nCol__Col
+             B
+             A
+             C
+             (H4:(plth.Prf (euclidean__axioms.nCol B A C)) =>
+              euclidean__tactics.Col__nCol__False A B C H H3)))
+         ((H3:(plth.Prf
+                 (plth.and
+                    (euclidean__axioms.Col A C B)
+                    (plth.and
+                       (euclidean__axioms.Col A B C)
+                       (plth.and
+                          (euclidean__axioms.Col B C A)
+                          (plth.and
+                             (euclidean__axioms.Col C B A)
+                             (euclidean__axioms.Col B A C)))))) =>
+           logic.and_ind_right
+             (euclidean__axioms.Col A C B)
+             (plth.and
+                (euclidean__axioms.Col A B C)
+                (plth.and
+                   (euclidean__axioms.Col B C A)
+                   (plth.and (euclidean__axioms.Col C B A) (euclidean__axioms.Col B A C))))
+             (euclidean__axioms.Col A B C)
+             (H5:(plth.Prf
+                    (plth.and
+                       (euclidean__axioms.Col A B C)
+                       (plth.and
+                          (euclidean__axioms.Col B C A)
+                          (plth.and
+                             (euclidean__axioms.Col C B A)
+                             (euclidean__axioms.Col B A C))))) =>
+              logic.and_elim_left
+                (euclidean__axioms.Col A B C)
+                (plth.and
+                   (euclidean__axioms.Col B C A)
+                   (plth.and (euclidean__axioms.Col C B A) (euclidean__axioms.Col B A C)))
+                H5)
+             H3)
+            (lemma__collinearorder.lemma__collinearorder C A B H2))))
+     (H1:(plth.Prf (euclidean__axioms.Col B C A)) =>
+      (H2:(plth.Prf (euclidean__axioms.Col A B C)) =>
+       H0
+         (euclidean__tactics.not__nCol__Col
+            B
+            A
+            C
+            (H3:(plth.Prf (euclidean__axioms.nCol B A C)) =>
+             euclidean__tactics.Col__nCol__False A B C H H2)))
+        ((H2:(plth.Prf
+                (plth.and
+                   (euclidean__axioms.Col C B A)
+                   (plth.and
+                      (euclidean__axioms.Col C A B)
+                      (plth.and
+                         (euclidean__axioms.Col A B C)
+                         (plth.and
+                            (euclidean__axioms.Col B A C)
+                            (euclidean__axioms.Col A C B)))))) =>
+          logic.and_ind_right
+            (euclidean__axioms.Col C B A)
+            (plth.and
+               (euclidean__axioms.Col C A B)
+               (plth.and
+                  (euclidean__axioms.Col A B C)
+                  (plth.and (euclidean__axioms.Col B A C) (euclidean__axioms.Col A C B))))
+            (euclidean__axioms.Col A B C)
+            (H4:(plth.Prf
+                   (plth.and
+                      (euclidean__axioms.Col C A B)
+                      (plth.and
+                         (euclidean__axioms.Col A B C)
+                         (plth.and
+                            (euclidean__axioms.Col B A C)
+                            (euclidean__axioms.Col A C B))))) =>
+             logic.and_ind_right
+               (euclidean__axioms.Col C A B)
+               (plth.and
+                  (euclidean__axioms.Col A B C)
+                  (plth.and (euclidean__axioms.Col B A C) (euclidean__axioms.Col A C B)))
+               (euclidean__axioms.Col A B C)
+               (H6:(plth.Prf
+                      (plth.and
+                         (euclidean__axioms.Col A B C)
+                         (plth.and
+                            (euclidean__axioms.Col B A C)
+                            (euclidean__axioms.Col A C B)))) =>
+                logic.and_elim_left
+                  (euclidean__axioms.Col A B C)
+                  (plth.and (euclidean__axioms.Col B A C) (euclidean__axioms.Col A C B))
+                  H6)
+               H4)
+            H2)
+           (lemma__collinearorder.lemma__collinearorder B C A H1))))
+    (H0:(plth.Prf (euclidean__axioms.Col B A C)) =>
+     (H1:(plth.Prf (euclidean__axioms.Col A B C)) =>
+      euclidean__tactics.Col__nCol__False A B C H H1)
+       ((H1:(plth.Prf
+               (plth.and
+                  (euclidean__axioms.Col A B C)
+                  (plth.and
+                     (euclidean__axioms.Col A C B)
+                     (plth.and
+                        (euclidean__axioms.Col C B A)
+                        (plth.and
+                           (euclidean__axioms.Col B C A)
+                           (euclidean__axioms.Col C A B)))))) =>
+         logic.and_elim_left
+           (euclidean__axioms.Col A B C)
+           (plth.and
+              (euclidean__axioms.Col A C B)
+              (plth.and
+                 (euclidean__axioms.Col C B A)
+                 (plth.and (euclidean__axioms.Col B C A) (euclidean__axioms.Col C A B))))
+           H1)
+          (lemma__collinearorder.lemma__collinearorder B A C H0))).
+

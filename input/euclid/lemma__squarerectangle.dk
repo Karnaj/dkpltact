@@ -1,0 +1,96 @@
+thm lemma__squarerectangle :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.imp (euclidean__defs.SQ A B C D) (euclidean__defs.RE A B C D))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.SQ A B C D)) =>
+  (H0:(plth.Prf (euclidean__defs.PG A B C D)) =>
+   (H1:(plth.Prf (euclidean__defs.Per D A B)) =>
+    (H2:(plth.Prf (euclidean__defs.RE A B C D)) => H2)
+      (lemma__PGrectangle.lemma__PGrectangle A D B C H0 H1))
+     (logic.and_ind_right
+        (euclidean__axioms.Cong A B C D)
+        (plth.and
+           (euclidean__axioms.Cong A B B C)
+           (plth.and
+              (euclidean__axioms.Cong A B D A)
+              (plth.and
+                 (euclidean__defs.Per D A B)
+                 (plth.and
+                    (euclidean__defs.Per A B C)
+                    (plth.and (euclidean__defs.Per B C D) (euclidean__defs.Per C D A))))))
+        (euclidean__defs.Per D A B)
+        (H2:(plth.Prf
+               (plth.and
+                  (euclidean__axioms.Cong A B B C)
+                  (plth.and
+                     (euclidean__axioms.Cong A B D A)
+                     (plth.and
+                        (euclidean__defs.Per D A B)
+                        (plth.and
+                           (euclidean__defs.Per A B C)
+                           (plth.and
+                              (euclidean__defs.Per B C D)
+                              (euclidean__defs.Per C D A))))))) =>
+         logic.and_ind_right
+           (euclidean__axioms.Cong A B B C)
+           (plth.and
+              (euclidean__axioms.Cong A B D A)
+              (plth.and
+                 (euclidean__defs.Per D A B)
+                 (plth.and
+                    (euclidean__defs.Per A B C)
+                    (plth.and (euclidean__defs.Per B C D) (euclidean__defs.Per C D A)))))
+           (euclidean__defs.Per D A B)
+           (H4:(plth.Prf
+                  (plth.and
+                     (euclidean__axioms.Cong A B D A)
+                     (plth.and
+                        (euclidean__defs.Per D A B)
+                        (plth.and
+                           (euclidean__defs.Per A B C)
+                           (plth.and
+                              (euclidean__defs.Per B C D)
+                              (euclidean__defs.Per C D A)))))) =>
+            logic.and_ind_right
+              (euclidean__axioms.Cong A B D A)
+              (plth.and
+                 (euclidean__defs.Per D A B)
+                 (plth.and
+                    (euclidean__defs.Per A B C)
+                    (plth.and (euclidean__defs.Per B C D) (euclidean__defs.Per C D A))))
+              (euclidean__defs.Per D A B)
+              (H6:(plth.Prf
+                     (plth.and
+                        (euclidean__defs.Per D A B)
+                        (plth.and
+                           (euclidean__defs.Per A B C)
+                           (plth.and
+                              (euclidean__defs.Per B C D)
+                              (euclidean__defs.Per C D A))))) =>
+               logic.and_elim_left
+                 (euclidean__defs.Per D A B)
+                 (plth.and
+                    (euclidean__defs.Per A B C)
+                    (plth.and (euclidean__defs.Per B C D) (euclidean__defs.Per C D A)))
+                 H6)
+              H4)
+           H2)
+        H))
+    (lemma__squareparallelogram.lemma__squareparallelogram A B C D H).
+

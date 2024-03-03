@@ -1,0 +1,50 @@
+thm lemma__supplementsymmetric :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (E:(plth.El euclidean__axioms.Point) =>
+                    plth.imp (euclidean__defs.Supp A B C E D) (euclidean__defs.Supp D B E C A)))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.Supp A B C E D)) =>
+  (H0:(plth.Prf (plth.and (euclidean__defs.Out B C E) (euclidean__axioms.BetS A B D))) =>
+   (H1:(plth.Prf (euclidean__axioms.BetS D B A)) =>
+    (H2:(plth.Prf (euclidean__defs.Out B E C)) =>
+     (H3:(plth.Prf (euclidean__defs.Supp D B E C A)) => H3)
+       (logic.and_intro (euclidean__defs.Out B E C) (euclidean__axioms.BetS D B A) H2 H1))
+      (logic.and_ind_left
+         (euclidean__defs.Out B C E)
+         (euclidean__axioms.BetS A B D)
+         (euclidean__defs.Out B E C)
+         (__ => lemma__ray5.lemma__ray5 B C E __)
+         H0))
+     (logic.and_ind_right
+        (euclidean__defs.Out B C E)
+        (euclidean__axioms.BetS A B D)
+        (euclidean__axioms.BetS D B A)
+        (H2:(plth.Prf (euclidean__axioms.BetS A B D)) =>
+         euclidean__axioms.axiom__betweennesssymmetry A B D H2)
+        H0))
+    ((H0:(plth.Prf (plth.and (euclidean__defs.Out B C E) (euclidean__axioms.BetS A B D))) =>
+      (__TmpHyp:(plth.Prf
+                   (plth.and (euclidean__defs.Out B C E) (euclidean__axioms.BetS A B D))) =>
+       __TmpHyp)
+        H0)
+       H).
+

@@ -1,0 +1,34 @@
+thm lemma__TCreflexive :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.imp (euclidean__axioms.Triangle A B C) (euclidean__axioms.Cong__3 A B C A B C)))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.Triangle A B C)) =>
+  (H0:(plth.Prf (euclidean__axioms.Cong A B A B)) =>
+   (H1:(plth.Prf (euclidean__axioms.Cong B C B C)) =>
+    (H2:(plth.Prf (euclidean__axioms.Cong A C A C)) =>
+     (H3:(plth.Prf (euclidean__axioms.Cong__3 A B C A B C)) => H3)
+       (logic.and_intro
+          (euclidean__axioms.Cong A B A B)
+          (plth.and (euclidean__axioms.Cong B C B C) (euclidean__axioms.Cong A C A C))
+          H0
+          (logic.and_intro
+             (euclidean__axioms.Cong B C B C)
+             (euclidean__axioms.Cong A C A C)
+             H1
+             H2)))
+      (euclidean__axioms.cn__congruencereflexive A C))
+     (euclidean__axioms.cn__congruencereflexive B C))
+    (euclidean__axioms.cn__congruencereflexive A B).
+

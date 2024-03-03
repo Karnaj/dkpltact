@@ -1,0 +1,59 @@
+thm lemma__collinearorder :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.imp
+                (euclidean__axioms.Col A B C)
+                (plth.and
+                   (euclidean__axioms.Col B A C)
+                   (plth.and
+                      (euclidean__axioms.Col B C A)
+                      (plth.and
+                         (euclidean__axioms.Col C A B)
+                         (plth.and (euclidean__axioms.Col A C B) (euclidean__axioms.Col C B A)))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.Col A B C)) =>
+  (H0:(plth.Prf (euclidean__axioms.Col B C A)) =>
+   (H1:(plth.Prf (euclidean__axioms.Col C A B)) =>
+    (H2:(plth.Prf (euclidean__axioms.Col B A C)) =>
+     (H3:(plth.Prf (euclidean__axioms.Col A C B)) =>
+      (H4:(plth.Prf (euclidean__axioms.Col C B A)) =>
+       logic.and_intro
+         (euclidean__axioms.Col B A C)
+         (plth.and
+            (euclidean__axioms.Col B C A)
+            (plth.and
+               (euclidean__axioms.Col C A B)
+               (plth.and (euclidean__axioms.Col A C B) (euclidean__axioms.Col C B A))))
+         H2
+         (logic.and_intro
+            (euclidean__axioms.Col B C A)
+            (plth.and
+               (euclidean__axioms.Col C A B)
+               (plth.and (euclidean__axioms.Col A C B) (euclidean__axioms.Col C B A)))
+            H0
+            (logic.and_intro
+               (euclidean__axioms.Col C A B)
+               (plth.and (euclidean__axioms.Col A C B) (euclidean__axioms.Col C B A))
+               H1
+               (logic.and_intro
+                  (euclidean__axioms.Col A C B)
+                  (euclidean__axioms.Col C B A)
+                  H3
+                  H4))))
+        (lemma__collinear2.lemma__collinear2 A C B H3))
+       (lemma__collinear2.lemma__collinear2 B A C H2))
+      (lemma__collinear1.lemma__collinear1 A B C H))
+     (lemma__collinear2.lemma__collinear2 B C A H0))
+    (lemma__collinear2.lemma__collinear2 A B C H).
+

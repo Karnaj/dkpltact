@@ -1,0 +1,121 @@
+thm lemma__TTflip :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (E:(plth.El euclidean__axioms.Point) =>
+                    plth.forall
+                      euclidean__axioms.Point
+                      (F:(plth.El euclidean__axioms.Point) =>
+                       plth.forall
+                         euclidean__axioms.Point
+                         (G:(plth.El euclidean__axioms.Point) =>
+                          plth.forall
+                            euclidean__axioms.Point
+                            (H:(plth.El euclidean__axioms.Point) =>
+                             plth.imp
+                               (euclidean__defs.TT A B C D E F G H)
+                               (euclidean__defs.TT B A D C E F G H))))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  G:(plth.El euclidean__axioms.Point) =>
+  H:(plth.El euclidean__axioms.Point) =>
+  H0:(plth.Prf (euclidean__defs.TT A B C D E F G H)) =>
+  (H1:(plth.Prf
+         (plth.ex
+            euclidean__axioms.Point
+            (J:(plth.El euclidean__axioms.Point) =>
+             plth.and
+               (euclidean__axioms.BetS E F J)
+               (plth.and (euclidean__axioms.Cong F J G H) (euclidean__defs.TG A B C D E J))))) =>
+   logic.ex_elim
+     euclidean__axioms.Point
+     (J:(plth.El euclidean__axioms.Point) =>
+      plth.and
+        (euclidean__axioms.BetS E F J)
+        (plth.and (euclidean__axioms.Cong F J G H) (euclidean__defs.TG A B C D E J)))
+     (euclidean__defs.TT B A D C E F G H)
+     (J:(plth.El euclidean__axioms.Point) =>
+      H2:(plth.Prf
+            (plth.and
+               (euclidean__axioms.BetS E F J)
+               (plth.and (euclidean__axioms.Cong F J G H) (euclidean__defs.TG A B C D E J)))) =>
+      logic.and_ind
+        (euclidean__axioms.BetS E F J)
+        (plth.and (euclidean__axioms.Cong F J G H) (euclidean__defs.TG A B C D E J))
+        (euclidean__defs.TT B A D C E F G H)
+        (H3:(plth.Prf (euclidean__axioms.BetS E F J)) =>
+         H4:(plth.Prf
+               (plth.and (euclidean__axioms.Cong F J G H) (euclidean__defs.TG A B C D E J))) =>
+         logic.and_ind
+           (euclidean__axioms.Cong F J G H)
+           (euclidean__defs.TG A B C D E J)
+           (euclidean__defs.TT B A D C E F G H)
+           (H5:(plth.Prf (euclidean__axioms.Cong F J G H)) =>
+            H6:(plth.Prf (euclidean__defs.TG A B C D E J)) =>
+            (H7:(plth.Prf (euclidean__defs.TG B A C D E J)) =>
+             (H8:(plth.Prf (euclidean__defs.TG C D B A E J)) =>
+              (H9:(plth.Prf (euclidean__defs.TG D C B A E J)) =>
+               (H10:(plth.Prf (euclidean__defs.TG B A D C E J)) =>
+                (H11:(plth.Prf (euclidean__defs.TT B A D C E F G H)) => H11)
+                  (logic.ex_intro
+                     euclidean__axioms.Point
+                     (X:(plth.El euclidean__axioms.Point) =>
+                      plth.and
+                        (euclidean__axioms.BetS E F X)
+                        (plth.and
+                           (euclidean__axioms.Cong F X G H)
+                           (euclidean__defs.TG B A D C E X)))
+                     J
+                     (logic.and_intro
+                        (euclidean__axioms.BetS E F J)
+                        (plth.and
+                           (euclidean__axioms.Cong F J G H)
+                           (euclidean__defs.TG B A D C E J))
+                        H3
+                        (logic.and_intro
+                           (euclidean__axioms.Cong F J G H)
+                           (euclidean__defs.TG B A D C E J)
+                           H5
+                           H10))))
+                 (lemma__TGsymmetric.lemma__TGsymmetric D B E C A J H9))
+                ((H9:(plth.Prf
+                        (plth.and
+                           (euclidean__defs.TG D C B A E J)
+                           (euclidean__defs.TG C D B A J E))) =>
+                  logic.and_elim_left
+                    (euclidean__defs.TG D C B A E J)
+                    (euclidean__defs.TG C D B A J E)
+                    H9)
+                   (lemma__TGflip.lemma__TGflip C B E D A J H8)))
+               (lemma__TGsymmetric.lemma__TGsymmetric B C E A D J H7))
+              ((H7:(plth.Prf
+                      (plth.and
+                         (euclidean__defs.TG B A C D E J)
+                         (euclidean__defs.TG A B C D J E))) =>
+                logic.and_elim_left
+                  (euclidean__defs.TG B A C D E J)
+                  (euclidean__defs.TG A B C D J E)
+                  H7)
+                 (lemma__TGflip.lemma__TGflip A C E B D J H6)))
+           H4)
+        H2)
+     H1)
+    H0.
+

@@ -1,0 +1,172 @@
+thm lemma__tworays :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.imp
+                (euclidean__defs.Out A B C)
+                (plth.imp (euclidean__defs.Out B A C) (euclidean__axioms.BetS A C B))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__defs.Out A B C)) =>
+  H0:(plth.Prf (euclidean__defs.Out B A C)) =>
+  (H1:(plth.Prf
+         (plth.or
+            (euclidean__axioms.BetS A C B)
+            (plth.or (plth.eq euclidean__axioms.Point B C) (euclidean__axioms.BetS A B C)))) =>
+   (H2:(plth.Prf
+          (plth.or
+             (euclidean__axioms.BetS B C A)
+             (plth.or (plth.eq euclidean__axioms.Point A C) (euclidean__axioms.BetS B A C)))) =>
+    (H3:(plth.Prf (euclidean__axioms.BetS A C B)) => H3)
+      ((H3:(plth.Prf
+              (plth.or
+                 (euclidean__axioms.BetS A C B)
+                 (plth.or
+                    (plth.eq euclidean__axioms.Point B C)
+                    (euclidean__axioms.BetS A B C)))) =>
+        (__TmpHyp:(plth.Prf
+                     (plth.or
+                        (euclidean__axioms.BetS A C B)
+                        (plth.or
+                           (plth.eq euclidean__axioms.Point B C)
+                           (euclidean__axioms.BetS A B C)))) =>
+         logic.or_elim
+           (euclidean__axioms.BetS A C B)
+           (plth.or (plth.eq euclidean__axioms.Point B C) (euclidean__axioms.BetS A B C))
+           (euclidean__axioms.BetS A C B)
+           (H4:(plth.Prf (euclidean__axioms.BetS A C B)) => H4)
+           (H4:(plth.Prf
+                  (plth.or
+                     (plth.eq euclidean__axioms.Point B C)
+                     (euclidean__axioms.BetS A B C))) =>
+            logic.or_elim
+              (plth.eq euclidean__axioms.Point B C)
+              (euclidean__axioms.BetS A B C)
+              (euclidean__axioms.BetS A C B)
+              (H5:(plth.Prf (plth.eq euclidean__axioms.Point B C)) =>
+               (H6:(plth.Prf (plth.not (plth.not (euclidean__axioms.BetS A C B)))) =>
+                plth.nnpp
+                  (euclidean__axioms.BetS A C B)
+                  (H7:(plth.Prf (plth.not (euclidean__axioms.BetS A C B))) =>
+                   (H10:(plth.Prf plth.false) => logic.false_elim plth.false H10)
+                     (H6 H7)))
+                 (H6:(plth.Prf (plth.not (euclidean__axioms.BetS A C B))) =>
+                  (H7:(plth.Prf (plth.neq euclidean__axioms.Point B C)) => H7 H5)
+                    (lemma__raystrict.lemma__raystrict B A C H0)))
+              (H5:(plth.Prf (euclidean__axioms.BetS A B C)) =>
+               (H6:(plth.Prf (euclidean__axioms.BetS A C B)) => H6)
+                 ((H6:(plth.Prf
+                         (plth.or
+                            (euclidean__axioms.BetS B C A)
+                            (plth.or
+                               (plth.eq euclidean__axioms.Point A C)
+                               (euclidean__axioms.BetS B A C)))) =>
+                   (__TmpHyp0:(plth.Prf
+                                 (plth.or
+                                    (euclidean__axioms.BetS B C A)
+                                    (plth.or
+                                       (plth.eq
+                                          euclidean__axioms.Point
+                                          A
+                                          C)
+                                       (euclidean__axioms.BetS B A C)))) =>
+                    logic.or_elim
+                      (euclidean__axioms.BetS B C A)
+                      (plth.or
+                         (plth.eq euclidean__axioms.Point A C)
+                         (euclidean__axioms.BetS B A C))
+                      (euclidean__axioms.BetS A C B)
+                      (H7:(plth.Prf (euclidean__axioms.BetS B C A)) =>
+                       (H8:(plth.Prf (euclidean__axioms.BetS A C B)) => H8)
+                         (euclidean__axioms.axiom__betweennesssymmetry
+                            B
+                            C
+                            A
+                            H7))
+                      (H7:(plth.Prf
+                             (plth.or
+                                (plth.eq euclidean__axioms.Point A C)
+                                (euclidean__axioms.BetS B A C))) =>
+                       logic.or_elim
+                         (plth.eq euclidean__axioms.Point A C)
+                         (euclidean__axioms.BetS B A C)
+                         (euclidean__axioms.BetS A C B)
+                         (H8:(plth.Prf
+                                (plth.eq euclidean__axioms.Point A C)) =>
+                          (H9:(plth.Prf
+                                 (plth.not
+                                    (plth.not
+                                       (euclidean__axioms.BetS A C B)))) =>
+                           plth.nnpp
+                             (euclidean__axioms.BetS A C B)
+                             (H10:(plth.Prf
+                                     (plth.not
+                                        (euclidean__axioms.BetS A C B))) =>
+                              (H11:(plth.Prf plth.false) =>
+                               logic.false_elim plth.false H11)
+                                (H9 H10)))
+                            (H9:(plth.Prf
+                                   (plth.not
+                                      (euclidean__axioms.BetS A C B))) =>
+                             (H10:(plth.Prf
+                                     (plth.neq
+                                        euclidean__axioms.Point
+                                        A
+                                        C)) =>
+                              H10 H8)
+                               (lemma__raystrict.lemma__raystrict A B C H)))
+                         (H8:(plth.Prf (euclidean__axioms.BetS B A C)) =>
+                          (H9:(plth.Prf
+                                 (plth.not
+                                    (plth.not
+                                       (euclidean__axioms.BetS A C B)))) =>
+                           plth.nnpp
+                             (euclidean__axioms.BetS A C B)
+                             (H10:(plth.Prf
+                                     (plth.not
+                                        (euclidean__axioms.BetS A C B))) =>
+                              (H11:(plth.Prf plth.false) =>
+                               logic.false_elim plth.false H11)
+                                (H9 H10)))
+                            (H9:(plth.Prf
+                                   (plth.not
+                                      (euclidean__axioms.BetS A C B))) =>
+                             (H10:(plth.Prf
+                                     (euclidean__axioms.BetS A B A)) =>
+                              (H11:(plth.Prf
+                                      (plth.not
+                                         (euclidean__axioms.BetS
+                                            A
+                                            B
+                                            A))) =>
+                               H11 H10)
+                                (euclidean__axioms.axiom__betweennessidentity
+                                   A
+                                   B))
+                               (euclidean__axioms.axiom__innertransitivity
+                                  A
+                                  B
+                                  A
+                                  C
+                                  H5
+                                  H8)))
+                         H7)
+                      __TmpHyp0)
+                     H6)
+                    H2))
+              H4)
+           __TmpHyp)
+          H3)
+         H1))
+     (lemma__ray1.lemma__ray1 B A C H0))
+    (lemma__ray1.lemma__ray1 A B C H).
+

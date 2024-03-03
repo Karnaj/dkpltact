@@ -1,0 +1,39 @@
+thm lemma__congruencetransitive :
+  plth.Prf
+    (plth.forall
+       euclidean__axioms.Point
+       (A:(plth.El euclidean__axioms.Point) =>
+        plth.forall
+          euclidean__axioms.Point
+          (B:(plth.El euclidean__axioms.Point) =>
+           plth.forall
+             euclidean__axioms.Point
+             (C:(plth.El euclidean__axioms.Point) =>
+              plth.forall
+                euclidean__axioms.Point
+                (D:(plth.El euclidean__axioms.Point) =>
+                 plth.forall
+                   euclidean__axioms.Point
+                   (E:(plth.El euclidean__axioms.Point) =>
+                    plth.forall
+                      euclidean__axioms.Point
+                      (F:(plth.El euclidean__axioms.Point) =>
+                       plth.imp
+                         (euclidean__axioms.Cong A B C D)
+                         (plth.imp
+                            (euclidean__axioms.Cong C D E F)
+                            (euclidean__axioms.Cong A B E F)))))))))
+  :=
+  A:(plth.El euclidean__axioms.Point) =>
+  B:(plth.El euclidean__axioms.Point) =>
+  C:(plth.El euclidean__axioms.Point) =>
+  D:(plth.El euclidean__axioms.Point) =>
+  E:(plth.El euclidean__axioms.Point) =>
+  F:(plth.El euclidean__axioms.Point) =>
+  H:(plth.Prf (euclidean__axioms.Cong A B C D)) =>
+  H0:(plth.Prf (euclidean__axioms.Cong C D E F)) =>
+  (H1:(plth.Prf (euclidean__axioms.Cong C D A B)) =>
+   (H2:(plth.Prf (euclidean__axioms.Cong A B E F)) => H2)
+     (euclidean__axioms.cn__congruencetransitive A B E F C D H1 H0))
+    (lemma__congruencesymmetric.lemma__congruencesymmetric C A B D H).
+
