@@ -14632,9 +14632,10 @@ thm proposition__07 :
                                                               C
                                                               B
                                                               E)
-                                                           (__: plth.Prf (plth.neq
-                                                              euclidean__axioms.Point
-                                                              F
+                                                           (__: plth.Prf (euclidean__axioms.Cong
+                                                              C
+                                                              B
+                                                              P
                                                               B) =>
                                                             (H41:(plth.Prf
                                                                     (
@@ -15744,9 +15745,10 @@ thm proposition__07 :
                                                             C
                                                             A
                                                             E)
-                                                         (__: plth.Prf (plth.neq
-                                                            euclidean__axioms.Point
-                                                            F
+                                                         (__: plth.Prf (euclidean__axioms.Cong
+                                                            C
+                                                            A
+                                                            P
                                                             A) =>
                                                           (H39:(plth.Prf
                                                                   (euclidean__axioms.Cong

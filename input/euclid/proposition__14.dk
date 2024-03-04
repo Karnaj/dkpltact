@@ -556,7 +556,10 @@ thm proposition__14 :
                                                                     A
                                                                     B
                                                                     E))
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.Col
+                                                                    D
+                                                                    B
+                                                                    m) =>
                                                                     (H52:(
                                                                     plth.Prf
                                                                     (euclidean__axioms.BetS

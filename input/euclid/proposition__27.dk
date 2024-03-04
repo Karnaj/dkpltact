@@ -9361,7 +9361,10 @@ thm proposition__27 :
                                                                     F
                                                                     G)
                                                                     plth.false
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.Col
+                                                                    E
+                                                                    F
+                                                                    P) =>
                                                                     (H68:(
                                                                     plth.Prf
                                                                     (euclidean__axioms.Col
@@ -13538,7 +13541,10 @@ thm proposition__27 :
                                                                     F
                                                                     G)
                                                                     plth.false
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.Col
+                                                                    E
+                                                                    F
+                                                                    R) =>
                                                                     (H71:(
                                                                     plth.Prf
                                                                     (plth.not

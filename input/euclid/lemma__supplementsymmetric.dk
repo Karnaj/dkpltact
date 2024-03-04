@@ -32,7 +32,7 @@ thm lemma__supplementsymmetric :
          (euclidean__defs.Out B C E)
          (euclidean__axioms.BetS A B D)
          (euclidean__defs.Out B E C)
-         (__ => lemma__ray5.lemma__ray5 B C E __)
+         (__: plth.Prf (euclidean__defs.Out B C E) => lemma__ray5.lemma__ray5 B C E __)
          H0))
      (logic.and_ind_right
         (euclidean__defs.Out B C E)

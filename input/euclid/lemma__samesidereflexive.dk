@@ -39,7 +39,7 @@ thm lemma__samesidereflexive :
            (euclidean__axioms.BetS P A C)
            (euclidean__axioms.Cong A C A P)
            (euclidean__defs.OS P P A B)
-           (__ =>
+           (__: plth.Prf (euclidean__axioms.BetS P A C) =>
             (H7:(plth.Prf (euclidean__axioms.Col A B A)) =>
              (H8:(plth.Prf (euclidean__defs.OS P P A B)) => H8)
                (logic.ex_intro

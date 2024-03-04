@@ -900,7 +900,12 @@ thm lemma__tarskiparallelflip :
                                         A
                                         B)
                                      plth.false
-                                     (__ =>
+                                     (__: plth.Prf (plth.not
+                                        (euclidean__defs.Meet
+                                           A
+                                           B
+                                           C
+                                           D)) =>
                                       (H26:(plth.Prf
                                               (euclidean__axioms.Col
                                                  A
@@ -1140,7 +1145,7 @@ thm lemma__tarskiparallelflip :
                              (plth.not
                                 (euclidean__defs.Meet B A C D))
                              (euclidean__defs.OS C D B A))))
-                    (__ =>
+                    (__: plth.Prf (plth.neq euclidean__axioms.Point C D) =>
                      logic.and_intro
                        (plth.neq euclidean__axioms.Point B A)
                        (plth.and
@@ -1266,7 +1271,7 @@ thm lemma__tarskiparallelflip :
                    (plth.not (euclidean__defs.Meet A B C D))
                    (euclidean__defs.OS C D A B)))
              (plth.neq euclidean__axioms.Point B A)
-             (__ => lemma__inequalitysymmetric.lemma__inequalitysymmetric A B __)
+             (__: plth.Prf (plth.neq euclidean__axioms.Point A B) => lemma__inequalitysymmetric.lemma__inequalitysymmetric A B __)
              H0))
          (H5:(plth.Prf (euclidean__defs.Meet B A C D)) =>
           (H6:(plth.Prf
@@ -1363,7 +1368,7 @@ thm lemma__tarskiparallelflip :
                                (plth.not (euclidean__defs.Meet A B C D))
                                (euclidean__defs.OS C D A B)
                                plth.false
-                               (__ =>
+                               (__: plth.Prf (plth.not (euclidean__defs.Meet A B C D)) =>
                                 (H20:(plth.Prf
                                         (euclidean__axioms.Col A B T)) =>
                                  (H21:(plth.Prf
@@ -1514,7 +1519,7 @@ thm lemma__tarskiparallelflip :
                  (plth.and
                     (plth.not (euclidean__defs.Meet A B D C))
                     (euclidean__defs.OS D C A B))))
-           (__ =>
+           (__: plth.Prf (plth.neq euclidean__axioms.Point A B) =>
             logic.and_intro
               (plth.neq euclidean__axioms.Point A B)
               (plth.and
@@ -1623,7 +1628,7 @@ thm lemma__tarskiparallelflip :
                              (plth.not (euclidean__defs.Meet A B C D))
                              (euclidean__defs.OS C D A B)
                              plth.false
-                             (__ =>
+                             (__: plth.Prf (plth.not (euclidean__defs.Meet A B C D)) =>
                               (H18:(plth.Prf (euclidean__axioms.Col C D T)) =>
                                (H19:(plth.Prf
                                        (plth.neq
@@ -1765,7 +1770,7 @@ thm lemma__tarskiparallelflip :
             (plth.neq euclidean__axioms.Point C D)
             (plth.and (plth.not (euclidean__defs.Meet A B C D)) (euclidean__defs.OS C D A B))
             (plth.neq euclidean__axioms.Point D C)
-            (__ => lemma__inequalitysymmetric.lemma__inequalitysymmetric C D __)
+            (__: plth.Prf (plth.neq euclidean__axioms.Point C D) => lemma__inequalitysymmetric.lemma__inequalitysymmetric C D __)
             H3)
          H0))
      (logic.and_ind_right

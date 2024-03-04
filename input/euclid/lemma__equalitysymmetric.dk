@@ -11,24 +11,17 @@ thm lemma__equalitysymmetric :
   A:(plth.El euclidean__axioms.Point) =>
   B:(plth.El euclidean__axioms.Point) =>
   H:(plth.Prf (plth.eq euclidean__axioms.Point B A)) =>
-  logic.eq_ind
-  euclidean__axioms.Point 
-  B
-  (P: (plth.El euclidean__axioms.Point) => plth.eq euclidean__axioms.Point P B)
-  (logic.eq_refl euclidean__axioms.Point B)
-  A
-  H.
-
-(;
   (H0:(plth.Prf (plth.eq euclidean__axioms.Point A A)) =>
+   (H1:(plth.Prf (plth.eq euclidean__axioms.Point A B)) => H1)
      (logic.eq_ind
         euclidean__axioms.Point
         B
         (A0:(plth.El euclidean__axioms.Point) =>
          plth.imp (plth.eq euclidean__axioms.Point A0 A0) (plth.eq euclidean__axioms.Point A0 B))
-        (H1:(plth.Prf (plth.eq euclidean__axioms.Point B B)) => H1)
+        (H1:(plth.Prf (plth.eq euclidean__axioms.Point B B)) =>
+         (H2:(plth.Prf (plth.eq euclidean__axioms.Point B B)) => H2) H1)
         A
         H
         H0))
     (logic.eq_refl euclidean__axioms.Point A).
-;)
+

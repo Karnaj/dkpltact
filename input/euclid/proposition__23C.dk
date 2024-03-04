@@ -81,7 +81,7 @@ thm proposition__23C :
                   (plth.and
                      (euclidean__defs.CongA X A Y D C E)
                      (euclidean__defs.OS X P A B)))))
-         (__ =>
+         (__: plth.Prf (euclidean__axioms.BetS P A Q) =>
           (H7:(plth.Prf (plth.eq euclidean__axioms.Point A A)) =>
            (H8:(plth.Prf (euclidean__axioms.Col A B A)) =>
             (H9:(plth.Prf (plth.not (euclidean__axioms.Col A B Q))) =>

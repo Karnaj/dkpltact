@@ -2425,7 +2425,10 @@ thm lemma__angletrichotomy2 :
                                                                     A
                                                                     C))
                                                                     plth.false
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.BetS
+                                                                    C
+                                                                    M
+                                                                    C) =>
                                                                     (H86:(
                                                                     plth.Prf
                                                                     (plth.not

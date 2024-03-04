@@ -135,7 +135,7 @@ thm proposition__26A :
                        (euclidean__defs.CongA B A C E D F)
                        (euclidean__defs.CongA B C A E F D)
                        plth.false
-                       (__ =>
+                       (__: plth.Prf (euclidean__defs.CongA B A C E D F) =>
                         (H32:(plth.Prf
                                 (plth.imp
                                    (euclidean__axioms.Cong

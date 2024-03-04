@@ -631,7 +631,13 @@ thm lemma__legsmallerhypotenuse :
                                              A
                                              B
                                              C)
-                                          (__ =>
+                                          (__: plth.Prf (euclidean__defs.LtA
+                                             C
+                                             A
+                                             B
+                                             A
+                                             B
+                                             D) =>
                                            lemma__angleorderrespectscongruence.lemma__angleorderrespectscongruence
                                              C
                                              A

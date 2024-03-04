@@ -2052,7 +2052,11 @@ thm proposition__34 :
                                                         B
                                                         B
                                                         C)))
-                                               (__ =>
+                                               (__: plth.Prf (euclidean__axioms.Cong
+                                                  A
+                                                  B
+                                                  D
+                                                  C) =>
                                                 logic.and_intro
                                                   (euclidean__axioms.Cong
                                                      C
@@ -2215,7 +2219,11 @@ thm proposition__34 :
                                                   C
                                                   B
                                                   D)
-                                               (__ =>
+                                               (__: plth.Prf (euclidean__axioms.Cong
+                                                  A
+                                                  C
+                                                  D
+                                                  B) =>
                                                 (H37:(plth.Prf
                                                         (plth.and
                                                            (euclidean__axioms.Cong
@@ -2313,7 +2321,11 @@ thm proposition__34 :
                                               B
                                               C
                                               D)
-                                           (__ =>
+                                           (__: plth.Prf (euclidean__axioms.Cong
+                                              A
+                                              B
+                                              D
+                                              C) =>
                                             (H36:(plth.Prf
                                                     (plth.and
                                                        (euclidean__axioms.Cong
@@ -9516,7 +9528,7 @@ thm proposition__34 :
         (euclidean__defs.Par A C D B)
         (euclidean__defs.Par A B C D)
         (euclidean__defs.Par A C B D)
-        (__ =>
+        (__: plth.Prf (euclidean__defs.Par A C D B) =>
          (H3:(plth.Prf
                 (plth.and
                    (euclidean__defs.Par C A D B)

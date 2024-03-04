@@ -113,7 +113,7 @@ thm lemma__parallelcollinear :
                         (plth.not (euclidean__defs.Meet A B c d))
                         (euclidean__defs.OS c d A B))
                      plth.false
-                     (__ =>
+                     (__: plth.Prf (plth.not (plth.eq euclidean__axioms.Point c d)) =>
                       (H14:(plth.Prf plth.false) =>
                        (H15:(plth.Prf plth.false) =>
                         logic.false_elim plth.false H15)
@@ -142,7 +142,7 @@ thm lemma__parallelcollinear :
                        (plth.not (euclidean__defs.Meet A B c d))
                        (euclidean__defs.OS c d A B))
                     plth.false
-                    (__ => __ H5)
+                    (__: plth.Prf (plth.neq euclidean__axioms.Point c d) => __ H5)
                     H8)
                  H2))
            (H5:(plth.Prf

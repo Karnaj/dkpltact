@@ -1014,7 +1014,10 @@ thm lemma__angletrichotomy :
                                                                     H4
                                                                     G)
                                                                     plth.false
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.BetS
+                                                                    H4
+                                                                    G
+                                                                    P) =>
                                                                     (H44:(
                                                                     plth.Prf
                                                                     (euclidean__axioms.BetS

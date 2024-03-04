@@ -657,7 +657,11 @@ thm lemma__diagonalsbisect :
                                                                     M
                                                                     M
                                                                     D)
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.Cong
+                                                                    M
+                                                                    B
+                                                                    M
+                                                                    D) =>
                                                                     (H92:(
                                                                     plth.Prf
                                                                     (plth.and
@@ -757,7 +761,11 @@ thm lemma__diagonalsbisect :
                                                                     M
                                                                     M
                                                                     C)
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.Cong
+                                                                    M
+                                                                    A
+                                                                    M
+                                                                    C) =>
                                                                     (H91:(
                                                                     plth.Prf
                                                                     (plth.and

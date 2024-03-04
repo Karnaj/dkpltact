@@ -1588,7 +1588,10 @@ thm proposition__22 :
                                                                     F
                                                                     X
                                                                     Y)))))))
-                                                                    (__ =>
+                                                                    (__: plth.Prf (plth.neq
+                                                                    euclidean__axioms.Point
+                                                                    C
+                                                                    c) =>
                                                                     (H78:(
                                                                     plth.Prf
                                                                     (plth.neq

@@ -865,7 +865,7 @@ thm lemma__parallelNC :
                                                   (plth.and
                                                      (euclidean__axioms.nCol B C D)
                                                      (euclidean__axioms.nCol A B D))))
-                                            (__ =>
+                                            (__: plth.Prf (plth.not (euclidean__defs.Meet A B C D)) =>
                                              (H26:(plth.Prf
                                                      (plth.not
                                                         (euclidean__axioms.Col

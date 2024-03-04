@@ -901,7 +901,10 @@ thm lemma__paralleldef2B :
                                                             B
                                                             C
                                                             D)
-                                                         (__ =>
+                                                         (__: plth.Prf (euclidean__axioms.BetS
+                                                            e
+                                                            b
+                                                            P) =>
                                                           (H33:(plth.Prf
                                                                   (euclidean__axioms.BetS
                                                                     P

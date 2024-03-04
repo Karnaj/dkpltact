@@ -178,7 +178,7 @@ thm proposition__16 :
                                      A
                                      C
                                      D))
-                               (__ =>
+                               (__: plth.Prf (euclidean__axioms.BetS A C G) =>
                                 (H22:(plth.Prf
                                         (plth.not
                                            (euclidean__axioms.Col
@@ -6269,7 +6269,13 @@ thm proposition__16 :
                                                                     e
                                                                     C
                                                                     f)
-                                                                    (__0 =>
+                                                                    (__0: plth.Prf (euclidean__defs.CongA
+                                                                    e
+                                                                    B
+                                                                    A
+                                                                    e
+                                                                    C
+                                                                    f) =>
                                                                     lemma__equalanglestransitive.lemma__equalanglestransitive
                                                                     A
                                                                     B
@@ -11626,7 +11632,13 @@ thm proposition__16 :
                                                                E
                                                                C
                                                                F)
-                                                            (__0 =>
+                                                            (__0: plth.Prf (euclidean__defs.CongA
+                                                               E
+                                                               A
+                                                               B
+                                                               E
+                                                               C
+                                                               F) =>
                                                              lemma__equalanglestransitive.lemma__equalanglestransitive
                                                                B
                                                                A
@@ -11857,7 +11869,13 @@ thm proposition__16 :
                                                        euclidean__axioms.Point
                                                        A
                                                        B)
-                                                    (__0 =>
+                                                    (__0: plth.Prf (euclidean__defs.CongA
+                                                       E
+                                                       A
+                                                       B
+                                                       E
+                                                       C
+                                                       F) =>
                                                      (H38:(plth.Prf
                                                              (plth.and
                                                                 (plth.neq

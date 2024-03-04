@@ -5426,7 +5426,10 @@ thm proposition__29 :
                                                                     H
                                                                     P)
                                                                     plth.false
-                                                                    (__ =>
+                                                                    (__: plth.Prf (euclidean__axioms.Col
+                                                                    G
+                                                                    H
+                                                                    L) =>
                                                                     (H112:(
                                                                     plth.Prf
                                                                     (euclidean__axioms.BetS

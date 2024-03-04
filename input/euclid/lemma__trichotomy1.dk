@@ -48,7 +48,7 @@ thm lemma__trichotomy1 :
          (euclidean__axioms.BetS B A P)
          (euclidean__axioms.Cong A P A B)
          (euclidean__axioms.Cong A B C D)
-         (__ =>
+         (__: plth.Prf (euclidean__axioms.BetS B A P) =>
           (H8:(plth.Prf (euclidean__axioms.BetS P A B)) =>
            (H9:(plth.Prf (plth.neq euclidean__axioms.Point A P)) =>
             (H10:(plth.Prf (plth.neq euclidean__axioms.Point P A)) =>
