@@ -121,8 +121,8 @@ let is_atomic_element el =
 let string_of_args args verbose =
   let _ = verbose in
   let format_arg arg =
-    Printf.sprintf "%s " (fst arg)
-    (* Printf.sprintf "(%s: %s) " (fst arg) (string_of_name (snd arg)) *)
+    (* Printf.sprintf "%s " (fst arg) *)
+    Printf.sprintf "(%s: %s) " (fst arg) (string_of_name (snd arg))
   in
   let args_string = List.map format_arg args in
   List.fold_left (fun str arg -> str ^ arg) " " args_string
@@ -168,8 +168,8 @@ let rec string_of_coq_prop prop =
       let args =
         List.fold_left
           (fun s var ->
-            Printf.sprintf "%s %s" s (snd var))
-            (*Printf.sprintf "%s (%s: %s)" s (snd var) (string_of_name (fst var))) *)
+            (* Printf.sprintf "%s %s" s (snd var)) *)
+            Printf.sprintf "%s (%s: %s)" s (snd var) (string_of_name (fst var)))
           "" l
       in
       Printf.sprintf "forall%s, %s" args (string_of_coq_prop prop)
@@ -177,8 +177,8 @@ let rec string_of_coq_prop prop =
       let args =
         List.fold_left
           (fun s var ->
-            Printf.sprintf "%s %s" s (snd var))
-            (* Printf.sprintf "%s (%s: %s)" s (snd var) (string_of_name (fst var))) *)
+            (* Printf.sprintf "%s %s" s (snd var)) *)
+            Printf.sprintf "%s (%s: %s)" s (snd var) (string_of_name (fst var)))
           "" l
       in
       Printf.sprintf "exists%s, %s" args (string_of_coq_prop prop)
@@ -265,11 +265,6 @@ let rec string_of_coq_prop prop =
       Printf.sprintf "%s <> %s" pstring qstring
   | PredicateCall (f, args) -> string_of_call f args
 
-(*
-let string_of_coq_proof p = match p with
-  | Ast.T -> "apply I."
-  | _ -> ""
-*)
 
 let x = Conjonction (True, False)
 let x = Disjonction (x, True)
