@@ -400,9 +400,9 @@ and simple_cut (proof : Ast.proof) : string =
   match proof with
   | Ast.Assumption h -> Printf.sprintf "exact %s" h
   | Ast.GlobalAssumption h -> Printf.sprintf "exact %s" (string_of_name h)
-  | Ast.Apply (th, args) -> Printf.sprintf "apply (%s)" (apply th args)
+  | Ast.Apply (th, args) -> Printf.sprintf "(%s)" (apply th args)
   | Ast.ApplyTheorem (th, args) ->
-      Printf.sprintf "apply (%s)" (apply (string_of_name th) args)
+      Printf.sprintf "(%s)" (apply (string_of_name th) args)
   | _ -> failwith "Impossible."
 
 and apply th args : string = Printf.sprintf "apply (%s)" (string_of_app th args)

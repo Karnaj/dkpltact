@@ -1,0 +1,43 @@
+nat: plth.Set.
+zero: plth.El nat.
+s: plth.function (plth.cons nat plth.nil) nat.
+plus: plth.function (plth.cons nat (plth.cons nat plth.nil)) nat.
+even: plth.predicate (plth.cons nat plth.nil).
+is_zero: plth.predicate (plth.cons nat plth.nil).
+is_zero_0: plth.Prf (is_zero zero).
+is_zero_s: plth.Prf (plth.forall nat (n: plth.El nat =>
+  plth.not (is_zero (s n))
+)).
+
+even_0: plth.Prf (even zero).
+even_s: plth.Prf (plth.forall nat (n: plth.El nat =>
+  plth.imp (even n) (even (s (s n)))
+)).
+
+not_even_1: plth.Prf (plth.not (even (s zero))).
+not_even_s: plth.Prf (plth.forall nat (n: plth.El nat =>
+  plth.imp (plth.not (even n)) (plth.not (even (s (s n))))
+)).
+
+plus_0: plth.Prf (plth.forall nat (n: plth.El nat =>
+  plth.eq nat (plus n zero) n
+)).
+
+plus_s: plth.Prf (plth.forall nat (n: plth.El nat =>
+  plth.forall nat (m: plth.El nat => 
+    plth.eq nat (plus n (s m)) (s (plus n m)))
+)).
+
+def one: plth.El nat := s zero.
+
+def is_successor: plth.predicate (plth.cons nat plth.nil) :=
+  (n: plth.El nat => plth.not (is_zero n)).
+
+def twice: plth.function (plth.cons nat plth.nil) nat :=
+  (n: plth.El nat => plus n n).
+
+thm even_2: plth.Prf (even (s (s zero))) :=
+  even_s zero even_0.
+
+thm even_2_plus_0: plth.Prf (even (plus (s (s zero)) zero)) :=
+  logic.eq_ind_r nat (s (s zero)) (n: plth.El nat => even n) even_2 (plus (s (s zero)) zero) (plus_0 (s (s zero))).

@@ -10,7 +10,7 @@ type set_index = (char * int) list
 type parsing_context = set_index * local_hypothesis * local_elements
 type context = parsing_context * Ast._global_context
 
-let string_of_name name = fst name ^ snd name
+let string_of_name name = fst name ^ "." ^ snd name
 let new_parsing_context : parsing_context = ([], [], [])
 
 let fresh_name (initial : char) (set_index : set_index) :
