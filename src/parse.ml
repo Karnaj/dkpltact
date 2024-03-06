@@ -441,7 +441,7 @@ let rec parse_proof (context : context) (p : T.term) :
       let q = parse_proposition context q in
       let proof =
         match fst (parse_proof context proof) with
-        | Ast.Assumption h -> Ast.AndElimLeft(p, q, h)
+        | Ast.Assumption h -> Ast.AndElimLeft (p, q, h)
         | proof ->
             let h, _ = fresh_local_hypothesis context in
             Ast.Cut
@@ -457,7 +457,7 @@ let rec parse_proof (context : context) (p : T.term) :
       let q = parse_proposition context q in
       let proof =
         match fst (parse_proof context proof) with
-        | Ast.Assumption h -> Ast.AndElimRight(p, q, h)
+        | Ast.Assumption h -> Ast.AndElimRight (p, q, h)
         | proof ->
             let h, _ = fresh_local_hypothesis context in
             Ast.Cut
@@ -626,9 +626,7 @@ and parse_application (context : context) (prf : Ast.proof)
       failwith
         "We do not yet parse disjonction proof applied to not enough arguments."
   | Ast.Conjonction (p1, p2), q :: prfimp :: rest ->
-      parse_and_ind_ context p1 p2
-        (parse_proposition context q)
-        prfimp prf rest
+      parse_and_ind_ context p1 p2 (parse_proposition context q) prfimp prf rest
   | Ast.Conjonction _, _ ->
       failwith
         "We do not yet parse conjonction proof applied to not enough arguments."
@@ -646,14 +644,29 @@ and parse_application (context : context) (prf : Ast.proof)
   | Ast.Equality _, _ ->
       failwith
         "We do not yet parse equality proof applied to not enough arguments."
-  | Ast.PredicateCall (predicate_name, params), args ->
-      (*begin match get_global_type predicate_name context with
-          | None -> failwith "JJJJ"
-          | _ -> failwithh "todo"
-        end *)
-      let _ = (predicate_name, params, args) in
-      failwith "predicate todo"
-  | Ast.GlobalProposition _, _ -> failwith "global propo todo"
+  | Ast.PredicateCall (predicate_name, p_args), args -> (
+      match get_global_predicate predicate_name context with
+      | _, None ->
+          failwith
+            "Cannot create proof by apply a predicate call of a declared \
+             predicate."
+      | _, Some (params, prop) ->
+          parse_application context prf
+            (Ast.call_predicate prop params p_args)
+            args)
+  | Ast.GlobalProposition h, _ ->
+      parse_application context prf (get_global_hypothesis h context) args
+  (* These last cases should not happen since propositions quantifiers are not yet collapsed at parsing step.*)
+  | Ast.ForallList ((set, id) :: params, prop), _ ->
+      parse_application context prf
+        (Ast.Forall (set, id, Ast.ForallList (params, prop)))
+        args
+  | Ast.ExistsList ((set, id) :: params, prop), _ ->
+      parse_application context prf
+        (Ast.Forall (set, id, Ast.ExistsList (params, prop)))
+        args
+  | Ast.ExistsList (_, p), _ -> parse_application context prf p args
+  | Ast.ForallList (_, _p), _ -> parse_application context prf p args
 
 and parse_arguments (context : context) (p : Ast.proposition)
     (args : T.term list) (f : Ast.term list -> Ast.proof)
@@ -680,6 +693,10 @@ and parse_arguments (context : context) (p : Ast.proposition)
         (Ast.instantiate_in_prop id x p)
         rest f
         (TElement x :: current_args)
+  | Ast.ForallList ((set, id) :: params, prop), _ ->
+      parse_arguments context
+        (Ast.Forall (set, id, Ast.ForallList (params, prop)))
+        args f current_args
   | _ -> parse_application context (f (List.rev current_args)) p args
 
 and parse_eq_elim (context : context) (set_name : B.name) (abs : T.term)
@@ -888,8 +905,8 @@ and parse_and_ind_ (context : context) (p1 : Ast.proposition)
   in
   parse_application context proof p args
 
-and parse_and_ind_l (context : context) (p1 : T.term) (p2 : T.term)
-    (p : T.term) (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
+and parse_and_ind_l (context : context) (p1 : T.term) (p2 : T.term) (p : T.term)
+    (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
   let p1 = parse_proposition context p1 in
   let p2 = parse_proposition context p2 in
   let p = parse_proposition context p in
@@ -910,8 +927,8 @@ and parse_and_ind_l (context : context) (p1 : T.term) (p2 : T.term)
   in
   parse_application context proof p args
 
-and parse_and_ind_r (context : context) (p1 : T.term) (p2 : T.term)
-    (p : T.term) (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
+and parse_and_ind_r (context : context) (p1 : T.term) (p2 : T.term) (p : T.term)
+    (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
   let p1 = parse_proposition context p1 in
   let p2 = parse_proposition context p2 in
   let p = parse_proposition context p in
@@ -919,18 +936,18 @@ and parse_and_ind_r (context : context) (p1 : T.term) (p2 : T.term)
   let hp2, prfp, _ =
     create_hypothesis_and_implication_proof context proof_p p2 p
   in
-let proof =
-  match proof_and with
-  | Ast.Assumption h -> Ast.AndIndRight (p1, p2, h, p, hp2, prfp)
-  | _ ->
-      let h, _ = fresh_local_hypothesis context in
-      Ast.Cut
-        ( Ast.Conjonction (p1, p2),
-          proof_and,
-          h,
-          Ast.AndIndRight (p1, p2, Ast.LocalAssertion h, p, hp2, prfp) )
-in
-parse_application context proof p args
+  let proof =
+    match proof_and with
+    | Ast.Assumption h -> Ast.AndIndRight (p1, p2, h, p, hp2, prfp)
+    | _ ->
+        let h, _ = fresh_local_hypothesis context in
+        Ast.Cut
+          ( Ast.Conjonction (p1, p2),
+            proof_and,
+            h,
+            Ast.AndIndRight (p1, p2, Ast.LocalAssertion h, p, hp2, prfp) )
+  in
+  parse_application context proof p args
 
 and parse_ex_elim_ (context : context) (abs : Ast.abstraction)
     (q : Ast.proposition) (proof_imp : T.term) (proof_ex : Ast.proof)
@@ -953,7 +970,8 @@ and parse_ex_elim_ (context : context) (abs : Ast.abstraction)
         let proof =
           match fst (parse_proof context proof_imp) with
           | Ast.Assumption h ->
-              Ast.Apply (h, [ Ast.TElement wit; Ast.TAssertion (Ast.LocalAssertion hp) ])
+              Ast.Apply
+                (h, [ Ast.TElement wit; Ast.TAssertion (Ast.LocalAssertion hp) ])
           | prfimp ->
               let cutprop = Ast.Implication (Ast.Forall abs, q) in
               let hcut, _ = fresh_local_hypothesis context in
@@ -962,8 +980,10 @@ and parse_ex_elim_ (context : context) (abs : Ast.abstraction)
                   prfimp,
                   hcut,
                   Ast.Apply
-                    (Ast.LocalAssertion(hcut), [ Ast.TElement wit; Ast.TAssertion (Ast.LocalAssertion hp) ])
-                )
+                    ( Ast.LocalAssertion hcut,
+                      [
+                        Ast.TElement wit; Ast.TAssertion (Ast.LocalAssertion hp);
+                      ] ) )
         in
         (wit_name, hp, proof, context)
   in
@@ -973,10 +993,10 @@ and parse_ex_elim_ (context : context) (abs : Ast.abstraction)
     | _ ->
         let h, _ = fresh_local_hypothesis context in
         Ast.Cut
-          ( Ast.Exists (abs),
+          ( Ast.Exists abs,
             proof_ex,
             h,
-            Ast.ExInd (abs, Ast.LocalAssertion(h), q, wit_name, hp, proof_imp))
+            Ast.ExInd (abs, Ast.LocalAssertion h, q, wit_name, hp, proof_imp) )
   in
 
   parse_application context proof q args

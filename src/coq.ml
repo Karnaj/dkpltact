@@ -1,118 +1,14 @@
-type name = string * string
-type variable = string
+open Ast
 
-type coq_element =
-  | ElementCst of variable
-  | Variable of variable
-  | GlobalElementCst of name
-  | FunctionCall of name * coq_element list
+let string_of_name (f : Ast.name) : string = snd f
 
-type coq_prop =
-  | True
-  | False
-  | GlobalProposition of name
-  | Forall of (name * variable) list * coq_prop
-  | Exists of (name * variable) list * coq_prop
-  | Implication of coq_prop * coq_prop
-  | Conjonction of coq_prop * coq_prop
-  | Disjonction of coq_prop * coq_prop
-  | Negation of coq_prop
-  | Equality of name * coq_element * coq_element
-  | NotEquality of name * coq_element * coq_element
-  | PredicateCall of name * coq_element list
-
-(*
-type coq_proof = 
-  | T
-  | Contradiction of proof
-  | Assumption of variable
-  | GlobalAssumption of variable
-  | AndIntro of coq_prop * coq_prop * proof * proof
-  | AndInd of variable * proposition * variable * proposition * proof * proposition * proof
-  | OrIntroL of proposition * proposition * proof
-  | OrIntroR of proposition * proposition * proof
-  | OrInd of proposition * proposition * proposition * variable * proof * variable * proof * proof 
-  | ExIntro of predicate * element * proof 
-  | ExInd of predicate * proposition * proof * variable * variable * proof
-  | ForallIntro of predicate * proof
-  | ForallElim of predicate * proof * element
-  | ImplIntro of variable * proposition * proof 
-  | ImplElim of variable * proposition * proof * proof (* (H, A, Pimp, PA) Show A => B as H, and show A.*)
-  | Apply of name * term list (* Use another theorem, replace it by ImplElim and ForallElim. *)
-  | Cut of proposition * proof * variable * proof
-  | NNPP of proposition * proof
-  | EqElim of predicate * element * element * proof * proof
-  | EqElimR of predicate * element * element * proof * proof
-  | EqSym of predicate * element * element * proof * proof
-  | EqRefl of predicate * element * element * proof * proof 
-  | EqTrans of predicate * element * element * element * proof * proof * proof   
-*)
-
-(*translate_proof p = match p with
-    | Ast.T -> Ast.T
-    | Ast.FalseElim(p) -> Contradiction(translate_proof p)
-    | Ast.Assumption(x) -> Assumption(x)
-    | Ast.GlobalAssumption(x) -> GlobalAssumption(x)
-    | Ast.AndIntro(p, q, prf_p, prf_q) ->
-        let p = translate_proposition p in
-        let q = translate_proposition q in
-        let prf_p = translate_proof prf_p in
-        let prf_q = translate_proof prf_q in
-    | Ast.AndInd(p, q, prf_p, prf_q) ->
-        let p = translate_proposition p in
-        let q = translate_proposition q in
-        let prf_and = translate_proof prf_and in
-        let prf = translate_proof prf in
-        AndInd(p, q, prf_and, hp, pq, r, prf)
-    |
-
-
-  and*)
-let rec translate_proof p = p
-
-and translate_element x =
-  match x with
-  | Ast.Variable x -> Variable x
-  | Ast.ElementCst x -> ElementCst x
-  | Ast.GlobalElementCst x -> GlobalElementCst x
-  | Ast.FunctionCall (f, l) -> FunctionCall (f, List.map translate_element l)
-
-and translate_proposition prop =
-  match prop with
-  | Ast.True -> True
-  | Ast.False -> False
-  | Ast.GlobalProposition p -> GlobalProposition p
-  | Ast.Forall (typ, x, prop) -> (
-      match translate_proposition prop with
-      | Forall (var_list, prop) -> Forall ((typ, x) :: var_list, prop)
-      | prop -> Forall ([ (typ, x) ], prop))
-  | Ast.Exists (typ, x, prop) -> (
-      match translate_proposition prop with
-      | Exists (var_list, prop) -> Exists ((typ, x) :: var_list, prop)
-      | prop -> Exists ([ (typ, x) ], prop))
-  | Ast.Implication (p, q) ->
-      Implication (translate_proposition p, translate_proposition q)
-  | Ast.Conjonction (p, q) ->
-      Conjonction (translate_proposition p, translate_proposition q)
-  | Ast.Disjonction (p, q) ->
-      Disjonction (translate_proposition p, translate_proposition q)
-  | Ast.Negation p -> Negation (translate_proposition p)
-  | Ast.Equality (typ, x, y) ->
-      Equality (typ, translate_element x, translate_element y)
-  | Ast.NotEquality (typ, x, y) ->
-      NotEquality (typ, translate_element x, translate_element y)
-  | PredicateCall (f, l) -> PredicateCall (f, List.map translate_element l)
-
-let string_of_name f =
-  snd f (* if fst f = "" then snd f else (fst f) ^ "." ^ (snd f) *)
-
-let string_with_or_without_par str cond =
+let string_with_or_without_par (str : string) (cond : bool) : string =
   if cond then Printf.sprintf "(%s)" str else Printf.sprintf "%s" str
 
 let is_atomic_element el =
   match el with
-  | Variable _ | ElementCst _ -> true
-  | GlobalElementCst _ -> true
+  | Ast.Variable _ | Ast.ElementCst _ -> true
+  | Ast.GlobalElementCst _ -> true
   | _ -> false
 
 (* Here, modify to (not) have the types of the argument. They can be necesary in some cases,
@@ -127,7 +23,7 @@ let string_of_args args verbose =
   let args_string = List.map format_arg args in
   List.fold_left (fun str arg -> str ^ arg) " " args_string
 
-let rec string_of_paramaters_type (args : name list) =
+let rec string_of_paramaters_type (args : Ast.name list) =
   match args with
   | [] -> ""
   | [ x ] -> string_of_name x
@@ -135,8 +31,7 @@ let rec string_of_paramaters_type (args : name list) =
 
 let rec string_of_call f args =
   let format_arg arg =
-    string_with_or_without_par
-      (string_of_coq_element arg)
+    string_with_or_without_par (string_of_element arg)
       (not (is_atomic_element arg))
   in
   let args_string = List.map format_arg args in
@@ -145,7 +40,7 @@ let rec string_of_call f args =
   in
   Printf.sprintf "%s%s" (string_of_name f) arg_string
 
-and string_of_coq_element x =
+and string_of_element x =
   match x with
   | ElementCst x -> x
   | Variable x -> x
@@ -158,12 +53,12 @@ let is_atomic_prop p =
 (* Here, modify to (not) have the types of the argument. They can be necesary in some cases,
    and we can try to detect them.
 *)
-let rec string_of_coq_prop prop =
+let rec string_of_prop prop =
   match prop with
-  | True -> "True"
-  | False -> "False"
-  | GlobalProposition p -> string_of_name p
-  | Forall (l, prop) ->
+  | Ast.True -> "True"
+  | Ast.False -> "False"
+  | Ast.GlobalProposition p -> string_of_name p
+  | Ast.ForallList (l, prop) ->
       let args =
         List.fold_left
           (fun s var ->
@@ -171,8 +66,8 @@ let rec string_of_coq_prop prop =
             Printf.sprintf "%s (%s: %s)" s (snd var) (string_of_name (fst var)))
           "" l
       in
-      Printf.sprintf "forall%s, %s" args (string_of_coq_prop prop)
-  | Exists (l, prop) ->
+      Printf.sprintf "forall%s, %s" args (string_of_prop prop)
+  | Ast.ExistsList (l, prop) ->
       let args =
         List.fold_left
           (fun s var ->
@@ -180,70 +75,66 @@ let rec string_of_coq_prop prop =
             Printf.sprintf "%s (%s: %s)" s (snd var) (string_of_name (fst var)))
           "" l
       in
-      Printf.sprintf "exists%s, %s" args (string_of_coq_prop prop)
-  | Implication (p, q) ->
-      let pstring = string_of_coq_prop p in
-      let qstring = string_of_coq_prop q in
+      Printf.sprintf "exists%s, %s" args (string_of_prop prop)
+  | Ast.Implication (p, q) ->
+      let pstring = string_of_prop p in
+      let qstring = string_of_prop q in
       let pparenthesis =
-        match p with Implication (_, _) -> true | _ -> false
+        match p with Ast.Implication (_, _) -> true | _ -> false
       in
       if pparenthesis then Printf.sprintf "(%s) -> %s" pstring qstring
       else Printf.sprintf "%s -> %s" pstring qstring
-  | Conjonction (p, q) ->
+  | Ast.Conjonction (p, q) ->
       let pparenthesis =
         match p with
-        | True | False | GlobalProposition _ | Negation _
-        | Equality (_, _, _)
-        | PredicateCall _ ->
+        | Ast.True | Ast.False | Ast.GlobalProposition _ | Ast.Negation _
+        | Ast.Equality (_, _, _)
+        | Ast.PredicateCall _ ->
             false
         | _ -> true
       in
       let qparenthesis =
         match q with
-        | True | False | GlobalProposition _ | Negation _
-        | Equality (_, _, _)
-        | PredicateCall _
-        | Conjonction (_, _) ->
+        | Ast.True | Ast.False | Ast.GlobalProposition _ | Ast.Negation _
+        | Ast.Equality (_, _, _)
+        | Ast.PredicateCall _
+        | Ast.Conjonction (_, _) ->
             false
         | _ -> true
       in
       let pstring =
-        string_with_or_without_par (string_of_coq_prop p) pparenthesis
+        string_with_or_without_par (string_of_prop p) pparenthesis
       in
       let qstring =
-        string_with_or_without_par (string_of_coq_prop q) qparenthesis
+        string_with_or_without_par (string_of_prop q) qparenthesis
       in
-      (*let pstring = if pparenthesis then Printf.sprintf "(%s)" pstring else Printf.sprintf "%s" pstring in
-        let qstring = if qparenthesis then Printf.sprintf "(%s)" qstring else Printf.sprintf "%s" qstring in *)
       Printf.sprintf "%s /\\ %s" pstring qstring
-  | Disjonction (p, q) ->
+  | Ast.Disjonction (p, q) ->
       let pparenthesis =
         match p with
-        | True | False | GlobalProposition _ | Negation _
-        | Equality (_, _, _)
-        | PredicateCall _
-        | Conjonction (_, _) ->
+        | Ast.True | Ast.False | Ast.GlobalProposition _ | Ast.Negation _
+        | Ast.Equality (_, _, _)
+        | Ast.PredicateCall _
+        | Ast.Conjonction (_, _) ->
             false
         | _ -> true
       in
       let qparenthesis =
         match q with
-        | True | False | GlobalProposition _ | Negation _
-        | Equality (_, _, _)
-        | PredicateCall _
-        | Conjonction (_, _)
-        | Disjonction (_, _) ->
+        | Ast.True | Ast.False | Ast.GlobalProposition _ | Ast.Negation _
+        | Ast.Equality (_, _, _)
+        | Ast.PredicateCall _
+        | Ast.Conjonction (_, _)
+        | Ast.Disjonction (_, _) ->
             false
         | _ -> true
       in
       let pstring =
-        string_with_or_without_par (string_of_coq_prop p) pparenthesis
+        string_with_or_without_par (string_of_prop p) pparenthesis
       in
       let qstring =
-        string_with_or_without_par (string_of_coq_prop q) qparenthesis
+        string_with_or_without_par (string_of_prop q) qparenthesis
       in
-      (*let pstring = if pparenthesis then Printf.sprintf "(%s)" pstring else Printf.sprintf "%s" pstring in
-        let qstring = if qparenthesis then Printf.sprintf "(%s)" qstring else Printf.sprintf "%s" qstring in*)
       Printf.sprintf "%s \\/ %s" pstring qstring
   | Negation p ->
       let parenthesis =
@@ -251,45 +142,27 @@ let rec string_of_coq_prop prop =
         | Implication (_, _) | Conjonction (_, _) | Disjonction (_, _) -> true
         | _ -> false
       in
-      let pstring = string_of_coq_prop p in
+      let pstring = string_of_prop p in
       if parenthesis then Printf.sprintf "~(%s)" pstring
       else Printf.sprintf "~%s" pstring
   | Equality (_, p, q) ->
-      let pstring = string_of_coq_element p in
-      let qstring = string_of_coq_element q in
+      let pstring = string_of_element p in
+      let qstring = string_of_element q in
       Printf.sprintf "%s = %s" pstring qstring
   | NotEquality (_, p, q) ->
-      let pstring = string_of_coq_element p in
-      let qstring = string_of_coq_element q in
+      let pstring = string_of_element p in
+      let qstring = string_of_element q in
       Printf.sprintf "%s <> %s" pstring qstring
   | PredicateCall (f, args) -> string_of_call f args
-
-let x = Conjonction (True, False)
-let x = Disjonction (x, True)
-let x = Conjonction (x, False)
-let x = Disjonction (False, x)
-let x = Conjonction (True, x)
-let nat = ("nat", "nat")
-let one = GlobalElementCst ("nat", "1")
-let two = GlobalElementCst ("nat", "2")
-let plus = ("nat", "plus")
-let add_one = FunctionCall (plus, [ one; one ])
-let eq_string = Equality (nat, two, add_one)
-
-let coq_string_test =
-  Disjonction
-    ( Forall
-        ( [ (("Nat", "nat"), "x"); (("Nat", "nat"), "y"); (("Nat", "nat"), "z") ],
-          Conjonction
-            ( Negation
-                (Implication
-                   (Negation (Implication (True, False)), Negation False)),
-              x ) ),
-      eq_string )
+  | Ast.Forall (set, x, prop) ->
+      Printf.sprintf "forall (%s: %s), %s" x (string_of_name set)
+        (string_of_prop prop)
+  | Ast.Exists (set, x, prop) ->
+      Printf.sprintf "exists (%s: %s), %s" x (string_of_name set)
+        (string_of_prop prop)
 
 type proof_step = Command of string | Step of proof_step list
 
-let coq_string_of_prop p = string_of_coq_prop (translate_proposition p)
 let symbol_list = [| '-'; '+'; '*' |]
 
 let get_symbol i =
@@ -370,9 +243,8 @@ let string_of_term t =
   match t with
   | Ast.TAssertion h -> string_of_assertion h
   | Ast.TElement t ->
-      let t = translate_element t in
-      if is_atomic_element t then string_of_coq_element t
-      else Printf.sprintf "(%s)" (string_of_coq_element t)
+      if is_atomic_element t then string_of_element t
+      else Printf.sprintf "(%s)" (string_of_element t)
 
 let string_of_app th args : string =
   Printf.sprintf "@%s%s" (string_of_assertion th)
@@ -434,10 +306,7 @@ let rec coq_string_step_of_proof p ctx =
       let strright = coq_string_step_of_proof proofright ctx in
       [ Command str1; Step strleft; Step strright ]
   | Ast.ExIntro (_, x, prf) ->
-      let str =
-        Printf.sprintf "exists %s."
-          (string_of_coq_element (translate_element x))
-      in
+      let str = Printf.sprintf "exists %s." (string_of_element x) in
       let str1 = coq_string_step_of_proof prf ctx in
       Command str :: str1
   | Ast.ExInd (_, h, _, wit_name, hp, proof_p) ->
@@ -477,14 +346,17 @@ let rec coq_string_step_of_proof p ctx =
          not happen."
   | Ast.Cut (p, Apply (f, l), h, prf) ->
       let strcut =
-        Printf.sprintf "assert (%s) as %s by (%s)." (coq_string_of_prop p) h
-          (apply f l)
+        Printf.sprintf "assert (%s) as %s by (%s)."
+          (string_of_prop (Ast.collapse_quantifier_in_proposition p))
+          h (apply f l)
       in
       let str = coq_string_step_of_proof prf ctx in
       Command strcut :: str
   | Ast.Cut (p, prfp, h, prf) ->
       let strcut =
-        Printf.sprintf "assert (%s) as %s." (coq_string_of_prop p) h
+        Printf.sprintf "assert (%s) as %s."
+          (string_of_prop (Ast.collapse_quantifier_in_proposition p))
+          h
       in
       let strp = coq_string_step_of_proof prfp ctx in
       let str = coq_string_step_of_proof prf ctx in
@@ -505,10 +377,9 @@ let rec coq_string_step_of_proof p ctx =
   | Ast.EqTrans (_, _, y, _, proof1, proof2) ->
       let proof1 = coq_string_step_of_proof proof1 ctx in
       let proof2 = coq_string_step_of_proof proof2 ctx in
-      let y = translate_element y in
       let str =
         Printf.sprintf "transitivity %s."
-          (string_with_or_without_par (string_of_coq_element y)
+          (string_with_or_without_par (string_of_element y)
              (not (is_atomic_element y)))
       in
       Command str :: Step proof1 :: [ Step proof2 ]
@@ -520,21 +391,21 @@ let rec coq_string_step_of_proof p ctx =
         | Ast.EqElimR (_, _, _, _, _) -> "eq_ind_r"
         | _ -> failwith "Impossible"
       in
-      let x = translate_element x in
-      let y = translate_element y in
       let eqind =
         Printf.sprintf "apply (@%s %s %s (fun %s => %s) %s %s %s)." eqelim
           (string_of_name set)
-          (string_with_or_without_par (string_of_coq_element x)
+          (string_with_or_without_par (string_of_element x)
              (not (is_atomic_element x)))
-          id (coq_string_of_prop pred) (string_of_assertion hprf)
-          (string_with_or_without_par (string_of_coq_element y)
+          id
+          (string_of_prop (Ast.collapse_quantifier_in_proposition pred))
+          (string_of_assertion hprf)
+          (string_with_or_without_par (string_of_element y)
              (not (is_atomic_element y)))
           (string_of_assertion heq)
       in
       [ Command eqind ]
 
-let string_of_coq_proof proof =
+let coq_string_of_proof proof =
   let list = coq_string_step_of_proof proof [] in
   List.fold_left
     (fun str step ->
@@ -555,16 +426,16 @@ let string_of_decl (decl : (string * string) * Ast.entry) =
         (string_of_paramaters_type args)
   | (_, p), Ast.Axiom prop ->
       Printf.sprintf "Axiom %s: %s." p
-        (string_of_coq_prop (translate_proposition prop))
+        (string_of_prop (Ast.collapse_quantifier_in_proposition prop))
   | (_, f), Ast.Predicate (args, prop) ->
       Printf.sprintf "Definition %s%s := %s." f
         (string_of_args args false)
-        (string_of_coq_prop (translate_proposition prop))
+        (string_of_prop (Ast.collapse_quantifier_in_proposition prop))
   | (_, f), Ast.Function (args, _, te) ->
       Printf.sprintf "Definition %s%s := %s." f
         (string_of_args args false)
-        (string_of_coq_element (translate_element te))
+        (string_of_element te)
   | (_, p), Ast.Theorem (prop, proof) ->
       Printf.sprintf "Theorem %s: %s.%s\nQed." p
-        (string_of_coq_prop (translate_proposition prop))
-        (string_of_coq_proof (translate_proof (Proof.simplify_proof proof)))
+        (string_of_prop (Ast.collapse_quantifier_in_proposition prop))
+        (coq_string_of_proof (Proof.simplify_proof proof))

@@ -21,8 +21,48 @@ type proposition =
   | Equality of set * element * element
   | NotEquality of set * element * element
   | PredicateCall of name * element list
+  | ForallList of (set * variable) list * proposition
+  | ExistsList of (set * variable) list * proposition
 
 and abstraction = set * variable * proposition (*x: set, (P x) = (set, x, P)*)
+
+let rec collapse_quantifier_in_proposition prop =
+  match prop with
+  | True -> True
+  | False -> False
+  | GlobalProposition p -> GlobalProposition p
+  | Forall (typ, x, prop) -> (
+      match collapse_quantifier_in_proposition prop with
+      | ForallList (var_list, prop) -> ForallList ((typ, x) :: var_list, prop)
+      | prop -> ForallList ([ (typ, x) ], prop))
+  | Exists (typ, x, prop) -> (
+      match collapse_quantifier_in_proposition prop with
+      | ExistsList (var_list, prop) -> ExistsList ((typ, x) :: var_list, prop)
+      | prop -> ExistsList ([ (typ, x) ], prop))
+  | Implication (p, q) ->
+      Implication
+        ( collapse_quantifier_in_proposition p,
+          collapse_quantifier_in_proposition q )
+  | Conjonction (p, q) ->
+      Conjonction
+        ( collapse_quantifier_in_proposition p,
+          collapse_quantifier_in_proposition q )
+  | Disjonction (p, q) ->
+      Disjonction
+        ( collapse_quantifier_in_proposition p,
+          collapse_quantifier_in_proposition q )
+  | Negation p -> Negation (collapse_quantifier_in_proposition p)
+  | Equality (typ, x, y) -> Equality (typ, x, y)
+  | NotEquality (typ, x, y) -> NotEquality (typ, x, y)
+  | PredicateCall (f, l) -> PredicateCall (f, l)
+  | ForallList (args, prop) -> (
+      match collapse_quantifier_in_proposition prop with
+      | ForallList (var_list, prop) -> ForallList (args @ var_list, prop)
+      | prop -> ForallList (args, prop))
+  | ExistsList (args, prop) -> (
+      match collapse_quantifier_in_proposition prop with
+      | ExistsList (var_list, prop) -> ExistsList (args @ var_list, prop)
+      | prop -> ExistsList (args, prop))
 
 type assertion = GlobalAssertion of name | LocalAssertion of variable
 
@@ -107,8 +147,11 @@ let rec instantiate_in_prop (id : variable) (t : element) (p : proposition) =
       Forall (set, y, instantiate_in_prop id t p)
   | Exists (set, y, p) when id <> y ->
       Exists (set, y, instantiate_in_prop id t p)
+  | ForallList (args, p) when not (List.mem id (List.map snd args)) ->
+      ForallList (args, instantiate_in_prop id t p)
+  | ExistsList (args, p) when not (List.mem id (List.map snd args)) ->
+      ExistsList (args, instantiate_in_prop id t p)
   | _ -> p
-
 
 type entry =
   | Set
@@ -244,3 +287,11 @@ let define_global_function (x : name) (args_with_type : (variable * set) list)
     predicates,
     (x, ((args_types, ret), Some (ids, el))) :: functions,
     sets )
+
+let rec call_predicate (prop : proposition) (params : variable list)
+    (args : element list) : proposition =
+  match (params, args) with
+  | [], [] -> prop
+  | id :: params, x :: args ->
+      call_predicate (instantiate_in_prop id x prop) params args
+  | _ -> failwith "Predicate applied to bad arguments number."

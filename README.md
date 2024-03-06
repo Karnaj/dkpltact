@@ -73,7 +73,7 @@ thm even_2: plth.Prf (even (s (s 0))) :=
   even_s 0 even_0.
 
 thm even_2_plus_0: plth.Prf (even (plus (s (s 0)) 0)) :=
-  logic.eq_ind_r nat (s (s 0)) even even_2  (plus (s (s 0)) 0) (plus_0 (s (s 0))). 
+  logic.eq_ind_r nat (s (s 0)) (n: plth.El nat => even n) even_2  (plus (s (s 0)) 0) (plus_0 (s (s 0))). 
 ```
 
 The above proofs are easy to write. To write more complex proofs, [`input/logic.dk`](./input/logic.dk) provides terms to introduce and eliminate the connectives (`logic.eq_ind_r` is one of them). 
