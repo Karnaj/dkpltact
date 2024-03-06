@@ -1,13 +1,16 @@
-let rec replace_var_in_term x t = function
-  | Ast.TElement x -> Ast.TElement x
-  | Ast.TProof p -> Ast.TProof (replace_var x t p)
+(** Replace a local hypothesis by another hypothesis.
+**)
 
-and replace_var x t = function
+let replace_var_in_term (x: Ast.variable) (prf: Ast.assertion) (t: Ast.term): Ast.term = match t with
+  | Ast.TAssertion(Ast.LocalAssertion y) when x = y -> Ast.TAssertion prf
+  | term -> term
+
+(* 
+and replace_var (x: Ast.variable) (t: Ast.assertion) = function
   | Ast.T -> Ast.T
   | Ast.FalseElim prf -> Ast.FalseElim (replace_var x t prf)
-  | Ast.Assumption y when x = y -> t
+  | Ast.Assumption(Ast.LocalAssertion y) when x = y -> Ast.Assumption(t)
   | Ast.Assumption y -> Ast.Assumption y
-  | Ast.GlobalAssumption y -> Ast.GlobalAssumption y
   | Ast.AndIntro (p, q, prfp, prfq) ->
       Ast.AndIntro (p, q, replace_var x t prfp, replace_var x t prfq)
   | Ast.AndInd (hp, p, hq, q, prfand, r, prf) ->
@@ -127,3 +130,11 @@ and simplify_proof p =
   | Ast.Cut (p, prfp, h, prf) ->
       Ast.Cut (p, simplify_proof prfp, h, simplify_proof prf)
   | Ast.Classic p -> Ast.Classic p
+*)
+
+(* Supposons p. Notons h l'hypothèse p. 
+   Montrons p avec prfp.
+    
+*)
+
+let simplify_proof p = p

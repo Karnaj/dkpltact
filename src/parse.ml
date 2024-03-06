@@ -2,64 +2,124 @@ module T = Kernel.Term
 module B = Kernel.Basic
 module E = Parsers.Entry
 
-type name_manager = (char * int) list * (string * string) list
+exception ParsingError of string
 
-let add_name (dk_name : string) (set : string * string) (manager : name_manager)
-    : string * name_manager =
-  let set_index, assoc = manager in
-  let set_initial = String.get (snd set) 0 in
-  match List.assoc_opt set_initial set_index with
+type local_hypothesis = (string * (Ast.proof * Ast.proposition)) list
+type local_elements = (string * (Ast.element * Ast.set)) list
+type set_index = (char * int) list
+type parsing_context = set_index * local_hypothesis * local_elements
+type context = parsing_context * Ast._global_context
+
+let string_of_name name = fst name ^ "." ^ snd name
+let new_parsing_context : parsing_context = ([], [], [])
+
+let fresh_name (initial : char) (set_index : set_index) :
+    Ast.variable * set_index =
+  match List.assoc_opt initial set_index with
   | None ->
-      let new_name = Printf.sprintf "%c%d" set_initial 0 in
-      let assoc = (dk_name, new_name) :: List.remove_assoc dk_name assoc in
-      let set_index = (set_initial, 1) :: set_index in
-      (new_name, (set_index, assoc))
+      let new_name = Printf.sprintf "%c%d" initial 0 in
+      (new_name, (initial, 1) :: set_index)
   | Some i ->
-      let new_name = Printf.sprintf "%c%d" set_initial i in
-      let assoc = (dk_name, new_name) :: List.remove_assoc dk_name assoc in
-      let set_index = (set_initial, i + 1) :: set_index in
-      (new_name, (set_index, assoc))
+      let new_name = Printf.sprintf "%c%d" initial i in
+      (new_name, (initial, i + 1) :: List.remove_assoc initial set_index)
 
-type context = name_manager * Ast.global_context * Ast.local_context
+let fresh_local_hypothesis (c : context) : Ast.variable * context =
+  let c, g = c in
+  let set_index, hypothesis, elements = c in
+  let id, set_index = fresh_name 'H' set_index in
+  (id, ((set_index, hypothesis, elements), g))
 
-let add_local (context : context) (dk_name : string) (set : string * string)
-    (_type : Ast.context_element) : context =
-  let manager, globals, locals = context in
-  let new_name, manager = add_name dk_name set manager in
-  let locals = (new_name, _type) :: List.remove_assoc new_name locals in
-  (manager, globals, locals)
+let fresh_local_element (set : Ast.set) (c : context) : Ast.variable * context =
+  let c, g = c in
+  let set_index, hypothesis, elements = c in
+  let id, set_index = fresh_name (String.get (snd set) 0) set_index in
+  (id, ((set_index, hypothesis, elements), g))
 
-let get_local_name (dk_name : string) (context : context) : string option =
-  let (_, name_assoc), _, _ = context in
-  List.assoc_opt dk_name name_assoc
+let declare_local_hypothesis (id : string) (c : context) (p : Ast.proposition) :
+    Ast.variable * context =
+  let h, c = fresh_local_hypothesis c in
+  let c, g = c in
+  let set_index, hypothesis, elements = c in
+  let hypothesis =
+    (id, (Ast.Assumption (Ast.LocalAssertion h), p))
+    :: List.remove_assoc id hypothesis
+  in
+  (h, ((set_index, hypothesis, elements), g))
 
-let get_local_type (dk_name : string) (context : context) :
-    Ast.context_element option =
-  let _, _, locals = context in
-  match get_local_name dk_name context with
-  | None -> None
-  | Some x -> List.assoc_opt x locals
+let declare_local_element (id : string) (c : context) (set : Ast.set) :
+    Ast.variable * context =
+  let x, c = fresh_local_element set c in
+  let c, g = c in
+  let set_index, hypothesis, elements = c in
+  let elements = (id, (Ast.Variable x, set)) :: List.remove_assoc id elements in
+  (x, ((set_index, hypothesis, elements), g))
 
-let get_global_type (dk_name : string * string) (context : context) :
-    Ast.context_element option =
-  let _, globals, _ = context in
-  List.assoc_opt dk_name globals
+let define_local_hypothesis (id : string) (c : context) (p : Ast.proposition)
+    (prf : Ast.proof) : context =
+  let c, g = c in
+  let set_index, hypothesis, elements = c in
+  let hypothesis = (id, (prf, p)) :: List.remove_assoc id hypothesis in
+  ((set_index, hypothesis, elements), g)
 
-let get_new_name (set : string * string) (set_index : (char * int) list) =
-  let set = String.get (snd set) 0 in
-  match List.assoc_opt set set_index with
-  (* | None ->
-         (Printf.sprintf "%s%d" (snd set) 0, (set, 1) :: set_index)
-     | Some i ->
-         ( Printf.sprintf "%s%d" (snd set) i,
-           (set, i + 1) :: List.remove_assoc set set_index )
-  *)
-  | None -> (Printf.sprintf "%c%d" set 0, (set, 1) :: set_index)
-  | Some i ->
-      ( Printf.sprintf "%c%d" set i,
-        (set, i + 1) :: List.remove_assoc set set_index )
+let define_local_element (id : string) (c : context) (set : Ast.set)
+    (x : Ast.element) : context =
+  let c, g = c in
+  let set_index, hypothesis, elements = c in
+  let elements = (id, (x, set)) :: List.remove_assoc id elements in
+  ((set_index, hypothesis, elements), g)
 
-let id_name cst = New_parse.id_name cst (* B.string_of_ident @@ B.id cst *)
+let get_local_hypothesis (id : string) (c : context) :
+    Ast.proof * Ast.proposition =
+  let c, _ = c in
+  let _, hypothesis, _ = c in
+  match List.assoc_opt id hypothesis with
+  | None -> failwith (Printf.sprintf "No hypothesis %s in Δ." id)
+  | Some p -> p
+
+let get_local_element (id : string) (c : context) : Ast.element * Ast.set =
+  let c, _ = c in
+  let _, _, elements = c in
+  match List.assoc_opt id elements with
+  | None -> failwith (Printf.sprintf "No element %s in Δ." id)
+  | Some x -> x
+
+let get_global_element (dk_cst : string * string) (context : context) :
+    Ast.set * Ast.element option =
+  let _, globals = context in
+  match List.assoc_opt dk_cst (Ast.global_elements globals) with
+  | None ->
+      failwith (Printf.sprintf "No element %s in Γ." (string_of_name dk_cst))
+  | Some x -> x
+
+let get_global_hypothesis (dk_cst : string * string) (context : context) :
+    Ast.proposition =
+  let _, globals = context in
+  match List.assoc_opt dk_cst (Ast.global_hypothesis globals) with
+  | None ->
+      failwith (Printf.sprintf "No hypothesis %s in Γ." (string_of_name dk_cst))
+  | Some x -> x
+
+let get_global_function (dk_cst : string * string) (context : context) :
+    (Ast.set list * Ast.set) * (Ast.variable list * Ast.element) option =
+  let _, globals = context in
+  match List.assoc_opt dk_cst (Ast.global_functions globals) with
+  | None ->
+      failwith (Printf.sprintf "No function %s in Γ." (string_of_name dk_cst))
+  | Some x -> x
+
+let get_global_predicate (dk_cst : string * string) (context : context) :
+    Ast.set list * (Ast.variable list * Ast.proposition) option =
+  let _, globals = context in
+  match List.assoc_opt dk_cst (Ast.global_predicates globals) with
+  | None ->
+      failwith (Printf.sprintf "No predicate %s in Γ." (string_of_name dk_cst))
+  | Some x -> x
+
+let set_exist (dk_cst : string * string) (context : context) : bool =
+  let _, globals = context in
+  Ast.set_exist dk_cst globals
+
+let id_name cst = B.string_of_ident @@ B.id cst
 let md_name cst = B.string_of_mident @@ B.md cst
 let pair_string_of_name name = (md_name name, id_name name)
 let string_of_name f = md_name f ^ "." ^ id_name f
@@ -86,6 +146,7 @@ let is_neq name = plth_const name "neq"
 let is_forall name = plth_const name "forall"
 let is_exists name = plth_const name "ex"
 let is_nnpp name = plth_const name "nnpp"
+let is_classic name = plth_const name "classic"
 let is_and_intro name = logic_const name "and_intro"
 let is_or_intro_r name = logic_const name "or_intro_right"
 let is_or_intro_l name = logic_const name "or_intro_left"
@@ -105,833 +166,850 @@ let is_eq_sym name = logic_const name "eq_sym"
 let is_eq_trans name = logic_const name "eq_trans"
 let is_I name = plth_const name "I"
 
-let rec parse_set_list predicate_name args =
+let rec parse_set_list context predicate_name args =
   match args with
   | T.Const (_, cst) when is_nil cst -> []
-  | T.App (T.Const (_, cst), T.Const (_, set), [ arg ]) when is_cons cst ->
-      pair_string_of_name set :: parse_set_list predicate_name arg
+  | T.App (T.Const (_, cst), T.Const (_, set), [ arg ]) when is_cons cst -> (
+      let dk_name = pair_string_of_name set in
+      match set_exist dk_name context with
+      | false ->
+          failwith (Printf.sprintf "No set %s not in Γ." (string_of_name cst))
+      | _ -> dk_name :: parse_set_list context predicate_name arg)
   | _ -> failwith ("Error ill-formed predicate " ^ predicate_name ^ ".")
 
-(* name_assoc associate each variable of dedukti to its name in the AST.
-   When an abstraction (id => t) is parsed, a fresh name x is associate
-   to id and when id is encountered while parsing t, it will be parsed
-   as x.
-*)
-let rec parse_element name_assoc x =
+let rec parse_element (context : context) (x : T.term) : Ast.element * Ast.name
+    =
   match x with
   | T.Const (_, cst) ->
-      let var_name = pair_string_of_name cst in
-      Ast.GlobalElementCst var_name
+      let dk_name = pair_string_of_name cst in
+      let set, _ = get_global_element dk_name context in
+      (Ast.GlobalElementCst dk_name, set)
   | T.App (T.Const (_, f), t, args) ->
-      let function_name = pair_string_of_name f in
-      let args = List.map (parse_element name_assoc) (t :: args) in
-      Ast.FunctionCall (function_name, args)
+      let dk_name = pair_string_of_name f in
+      let (fun_args_type, return), _ = get_global_function dk_name context in
+      let args_with_type = List.map (parse_element context) (t :: args) in
+      let args, args_type = List.split args_with_type in
+      if List.equal (fun x y -> x = y) args_type fun_args_type then
+        (Ast.FunctionCall (dk_name, args), return)
+      else
+        failwith
+          (Printf.sprintf "Error function call %s with bad arguments."
+             (string_of_name f))
   | T.DB (_, id, _) ->
-      let var_name = B.string_of_ident id in
-      Ast.Variable (List.assoc var_name name_assoc)
+      let dk_name = B.string_of_ident id in
+      let x, set = get_local_element dk_name context in
+      (x, set)
   | _ ->
       failwith
         "Error, an element is either a constant or the application of a symbol \
          function."
 
-let rec parse_proposition set_index name_assoc p =
+let rec parse_proposition (context : context) (p : T.term) : Ast.proposition =
   match p with
   | T.Const (_, cst) when is_true cst -> Ast.True
   | T.Const (_, cst) when is_false cst -> Ast.False
-  | T.Const (_, cst) -> Ast.GlobalProposition (pair_string_of_name cst)
+  | T.Const (_, cst) ->
+      let dk_name = pair_string_of_name cst in
+      (* replace by check_global_hypothesis **)
+      let _ = get_global_hypothesis dk_name context in
+      Ast.GlobalProposition dk_name
   | T.App (T.Const (_, cst), t1, [ t2 ]) when is_imp cst ->
       Ast.Implication
-        ( parse_proposition set_index name_assoc t1,
-          parse_proposition set_index name_assoc t2 )
+        (parse_proposition context t1, parse_proposition context t2)
   | T.App (T.Const (_, cst), t1, [ t2 ]) when is_and cst ->
       Ast.Conjonction
-        ( parse_proposition set_index name_assoc t1,
-          parse_proposition set_index name_assoc t2 )
+        (parse_proposition context t1, parse_proposition context t2)
   | T.App (T.Const (_, cst), t1, [ t2 ]) when is_or cst ->
       Ast.Disjonction
-        ( parse_proposition set_index name_assoc t1,
-          parse_proposition set_index name_assoc t2 )
+        (parse_proposition context t1, parse_proposition context t2)
   | T.App (T.Const (_, cst), t, []) when is_neg cst ->
-      Ast.Negation (parse_proposition set_index name_assoc t)
+      Ast.Negation (parse_proposition context t)
   | T.App (T.Const (_, cst), T.Const (_, set), [ t1; t2 ]) when is_eq cst ->
       Ast.Equality
         ( pair_string_of_name set,
-          parse_element name_assoc t1,
-          parse_element name_assoc t2 )
+          fst (parse_element context t1),
+          fst (parse_element context t2) )
   | T.App (T.Const (_, cst), T.Const (_, set), [ t1; t2 ]) when is_neq cst ->
       Ast.NotEquality
         ( pair_string_of_name set,
-          parse_element name_assoc t1,
-          parse_element name_assoc t2 )
+          fst (parse_element context t1),
+          fst (parse_element context t2) )
   | T.App (T.Const (_, cst), T.Const (_, set), [ T.Lam (_, id, _, t) ])
     when is_forall cst ->
       let set = pair_string_of_name set in
       let id = B.string_of_ident id in
-      let elname, set_index = get_new_name set set_index in
-      let name_assoc = (id, elname) :: List.remove_assoc id name_assoc in
-      Ast.Forall (set, elname, parse_proposition set_index name_assoc t)
+      let id, context = declare_local_element id context set in
+      Ast.Forall (set, id, parse_proposition context t)
   | T.App (T.Const (_, cst), T.Const (_, set), [ T.Lam (_, id, _, t) ])
     when is_exists cst ->
       let set = pair_string_of_name set in
       let id = B.string_of_ident id in
-      let elname, set_index = get_new_name set set_index in
-      let name_assoc = (id, elname) :: List.remove_assoc id name_assoc in
-      Ast.Exists (set, elname, parse_proposition set_index name_assoc t)
+      let id, context = declare_local_element id context set in
+      Ast.Exists (set, id, parse_proposition context t)
   | T.App (T.Const (_, f), t, args) ->
       let predicate_name = pair_string_of_name f in
-      let args = List.map (parse_element name_assoc) (t :: args) in
-      Ast.PredicateCall (predicate_name, args)
+      let predicate_args_type, _ =
+        get_global_predicate predicate_name context
+      in
+      let args_with_type = List.map (parse_element context) (t :: args) in
+      let args, args_type = List.split args_with_type in
+      if List.equal (fun x y -> x = y) args_type predicate_args_type then
+        Ast.PredicateCall (predicate_name, args)
+      else
+        failwith
+          (Printf.sprintf "Error predicate call %s with bad arguments."
+             (string_of_name f))
   | _ -> failwith "The following term is not a proposition.\n"
 
-exception ParsingError of string
-
-let rec parse_predicate_definition set_index name_assoc te =
+let rec parse_predicate_definition (context : context) (te : T.term) :
+    (Ast.variable * Ast.name) list * Ast.proposition =
   match te with
   | T.Lam (_, id, Some (T.App (T.Const (_, cst), T.Const (_, set), _)), t)
     when is_el cst ->
       let set = pair_string_of_name set in
       let id = B.string_of_ident id in
-      let elname, set_index = get_new_name set set_index in
-      let name_assoc = (id, elname) :: List.remove_assoc id name_assoc in
-      let args, t = parse_predicate_definition set_index name_assoc t in
-      ((elname, set) :: args, t)
-  | t -> ([], parse_proposition set_index name_assoc t)
+      let id, context = declare_local_element id context set in
+      let args, t = parse_predicate_definition context t in
+      ((id, set) :: args, t)
+  | t -> ([], parse_proposition context t)
 
-let rec parse_function_definition set_index name_assoc te =
+let rec parse_function_definition (context : context) (te : T.term) :
+    (Ast.variable * Ast.name) list * (Ast.element * Ast.name) =
   match te with
   | T.Lam (_, id, Some (T.App (T.Const (_, cst), T.Const (_, set), _)), t)
     when is_el cst ->
       let set = pair_string_of_name set in
       let id = B.string_of_ident id in
-      let elname, set_index = get_new_name set set_index in
-      let name_assoc = (id, elname) :: List.remove_assoc id name_assoc in
-      let args, t = parse_function_definition set_index name_assoc t in
-      ((elname, set) :: args, t)
-  | t -> ([], parse_element name_assoc t)
+      let id, context = declare_local_element id context set in
+      let args, t = parse_function_definition context t in
+      ((id, set) :: args, t)
+  | t -> ([], parse_element context t)
 
-let rec parse_proof set_index name_assoc p ctx locals =
+let rec parse_proof (context : context) (p : T.term) :
+    Ast.proof * Ast.proposition =
   match p with
   | T.Const (_, cst) when is_I cst -> (Ast.T, Ast.True)
-  | T.Const (_, cst) -> (
-      let var_name = pair_string_of_name cst in
-      match List.assoc_opt var_name ctx with
-      | None ->
-          failwith
-            (Printf.sprintf "%s not in global context" (string_of_name cst))
-      | Some (Ast.HypothesisC p) -> (Ast.GlobalAssumption var_name, p)
-      | _ ->
-          failwith
-            (Printf.sprintf "%s not a proposition in the global context"
-               (string_of_name cst)))
-  | T.DB (_, id, _) -> (
-      let var_name = B.string_of_ident id in
-      let new_name = List.assoc var_name name_assoc in
-      match List.assoc_opt var_name locals with
-      | None ->
-          failwith
-            (Printf.sprintf "%s (%s) not in local context" var_name new_name)
-      | Some (Ast.HypothesisC p) -> (Ast.Assumption new_name, p)
-      | _ ->
-          failwith
-            (Printf.sprintf "%s not a proposition in the local context" var_name)
-      )
-  | T.Lam (_, id, Some (T.App (T.Const (_, cst), T.Const (_, set), [])), t)
+  | T.Const (_, cst) ->
+      let dk_name = pair_string_of_name cst in
+      let p = get_global_hypothesis dk_name context in
+      (Ast.Assumption (Ast.GlobalAssertion dk_name), p)
+  | T.DB (_, id, _) ->
+      let dk_name = B.string_of_ident id in
+      get_local_hypothesis dk_name context
+  | T.Lam (_, id, Some (T.App (T.Const (_, cst), T.Const (_, set), [])), prf)
     when is_el cst ->
       let id = B.string_of_ident id in
-      let set_name = pair_string_of_name set in
-      let elname, set_index = get_new_name set_name set_index in
-      let name_assoc = (id, elname) :: List.remove_assoc id name_assoc in
-      let locals =
-        (elname, Ast.ElementC set_name) :: List.remove_assoc elname locals
-      in
-      let prf, p = parse_proof set_index name_assoc t ctx locals in
-      let pred = (set_name, elname, p) in
-      (Ast.ForallIntro (pred, prf), Ast.Forall pred)
+      let set = pair_string_of_name set in
+      let id, context = declare_local_element id context set in
+      let prf, p = parse_proof context prf in
+      let abs = (set, id, p) in
+      (Ast.ForallIntro (abs, prf), Ast.Forall abs)
   | T.Lam (_, id, Some (T.App (T.Const (_, cst), statement, [])), t)
     when is_prf cst ->
       let id = B.string_of_ident id in
-      let prop_name, set_index = get_new_name ("", "Himp") set_index in
-      let name_assoc = (id, prop_name) :: List.remove_assoc id name_assoc in
-      let statement = parse_proposition set_index name_assoc statement in
-      let locals = (id, Ast.HypothesisC statement) :: locals in
-      let prf, p = parse_proof set_index name_assoc t ctx locals in
-      (Ast.ImplIntro (prop_name, statement, prf), Ast.Implication (statement, p))
+      let statement = parse_proposition context statement in
+      let id, context = declare_local_hypothesis id context statement in
+      let prf, p = parse_proof context t in
+      (Ast.ImplIntro (id, statement, prf), Ast.Implication (statement, p))
+  | T.Lam (_, id, None, _) ->
+      let id = B.string_of_ident id in
+      failwith (Printf.sprintf "Here %s" id)
+  | T.App (T.Const (_, cst), prop, proof :: rest) when is_nnpp cst ->
+      let prf, _ = parse_proof context proof in
+      let p = parse_proposition context prop in
+      parse_application context (Ast.NNPP (p, prf)) p rest
+  (*  nnpp p is a proof of ~~p -> p. *)
+  | T.App (T.Const (_, cst), prop, rest) when is_classic cst ->
+      let p = parse_proposition context prop in
+      parse_application context (Ast.Classic p)
+        (Ast.Disjonction (p, Ast.Negation p))
+        rest
   | T.App (T.Const (_, cst), a, b :: aprf :: bprf :: rest) when is_and_intro cst
     ->
-      let a = parse_proposition set_index name_assoc a in
-      let b = parse_proposition set_index name_assoc b in
-      let aprf, _ = parse_proof set_index name_assoc aprf ctx locals in
-      let bprf, _ = parse_proof set_index name_assoc bprf ctx locals in
-      parse_proof_with_other_args set_index name_assoc
+      let a = parse_proposition context a in
+      let b = parse_proposition context b in
+      let aprf, _ = parse_proof context aprf in
+      let bprf, _ = parse_proof context bprf in
+      parse_application context
         (Ast.AndIntro (a, b, aprf, bprf))
         (Ast.Conjonction (a, b))
-        ctx locals rest
-  | T.App (T.Const (_, cst), b, a :: bprf :: rest) when is_or_intro_l cst ->
-      let a = parse_proposition set_index name_assoc a in
-      let b = parse_proposition set_index name_assoc b in
-      let prf, _ = parse_proof set_index name_assoc bprf ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.OrIntroL (a, b, prf))
+        rest
+  | T.App (T.Const (_, cst), _, _ :: _) when is_and_intro cst ->
+      failwith "We do not yet parse and_intro applied to not enough arguments."
+  | T.App (T.Const (_, cst), _, []) when is_and_intro cst ->
+      failwith
+        "and_intro with one argument is not a proof of a correct proposition."
+  (* and_intro a b aprf is a proof of b -> a /\ b,
+     and_intro a b is a proof of a -> b -> a /\ b.
+     We cannot have fewer arguments. Indeed, and_intro a would be a proof of the proposition
+     forall b, a -> b -> a /\ b, but this is not a term of predicate logic since it quantifies over
+     propositions. It would be a correct term in a theory with propositions as types. *)
+  | T.App (T.Const (_, cst), a, b :: aprf :: rest) when is_or_intro_l cst ->
+      let a = parse_proposition context a in
+      let b = parse_proposition context b in
+      let aprf, _ = parse_proof context aprf in
+      parse_application context
+        (Ast.OrIntroL (a, b, aprf))
         (Ast.Disjonction (a, b))
-        ctx locals rest
-  | T.App (T.Const (_, cst), b, a :: aprf :: rest) when is_or_intro_r cst ->
-      let a = parse_proposition set_index name_assoc a in
-      let b = parse_proposition set_index name_assoc b in
-      let prf, _ = parse_proof set_index name_assoc aprf ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.OrIntroR (a, b, prf))
+        rest
+  | T.App (T.Const (_, cst), a, b :: bprf :: rest) when is_or_intro_r cst ->
+      let a = parse_proposition context a in
+      let b = parse_proposition context b in
+      let bprf, _ = parse_proof context bprf in
+      parse_application context
+        (Ast.OrIntroR (a, b, bprf))
         (Ast.Disjonction (a, b))
-        ctx locals rest
+        rest
+  | T.App (T.Const (_, cst), _, _ :: _)
+    when is_or_intro_l cst || is_or_intro_r cst ->
+      failwith "We do not yet parse or_intro applied to not enough arguments."
+  | T.App (T.Const (_, cst), _, []) when is_and_intro cst || is_or_intro_r cst
+    ->
+      failwith
+        "or_intro with one argument is not a proof of a correct proposition."
+      (* or_intro_l a b is a proof of a -> a \/ b.
+         or_intro_r a b is a proof of b -> a \/ b.
+         Here again, fewer arguments requires a theory where Prop is a Set. *)
   | T.App
       ( T.Const (_, cst),
         T.Const (_, set),
-        T.Lam (_, x, _, predicate) :: wit :: proof_ex :: rest )
+        T.Lam (_, x, _, prop) :: wit :: proof_ex :: rest )
     when is_ex_intro cst ->
+      let wit = fst (parse_element context wit) in
+      let prf, _ = parse_proof context proof_ex in
       let id = B.string_of_ident x in
-      let set_name = pair_string_of_name set in
-      let elname, set_index = get_new_name set_name set_index in
-      let name_assoc = (id, elname) :: List.remove_assoc id name_assoc in
-      let p = parse_proposition set_index name_assoc predicate in
-      let wit = parse_element name_assoc wit in
-      let prf, _ = parse_proof set_index name_assoc proof_ex ctx locals in
-      let pred = (set_name, elname, p) in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.ExIntro (pred, wit, prf))
-        (Ast.Exists pred) ctx locals rest
-  | T.App (T.Const (_, cst), p1, proof_false :: rest) when is_false_elim cst ->
-      let prf, _ = parse_proof set_index name_assoc proof_false ctx locals in
-      let p = parse_proposition set_index name_assoc p1 in
-      parse_proof_with_other_args set_index name_assoc (Ast.FalseElim prf) p ctx
-        locals rest
-  | T.App (T.Const (_, cst), prop, proof :: rest) when is_nnpp cst ->
-      let prf, _ = parse_proof set_index name_assoc proof ctx locals in
-      let p = parse_proposition set_index name_assoc prop in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.NNPP (p, prf))
-        p ctx locals rest
+      let set = pair_string_of_name set in
+      let id, pcontext = declare_local_element id context set in
+      let p = parse_proposition pcontext prop in
+      let abs = (set, id, p) in
+      parse_application context
+        (Ast.ExIntro (abs, wit, prf))
+        (Ast.Exists abs) rest
+  | T.App (T.Const (_, cst), _, _ :: _) when is_ex_intro cst ->
+      failwith "We do not yet parse ex_intro applied to not enough arguments."
+  | T.App (T.Const (_, cst), _, []) when is_ex_intro cst ->
+      failwith
+        "ex_intro with one argument is not a proof of a correct proposition."
+      (* ex_intro set P x is a proof of P(x) -> ex x: set, P(x).
+         ex_intro set P is a proof of forall x, P(x) -> ex x: set, P(x).
+         Here, ex_intro set would be a proof of
+         forall P: set -> Prop, forall x: set, P(x) -> ex x: set, P(x).
+         However, this require the ability to quantify over predicates,
+         hence a more expressive theory such as simple type theory. *)
+  | T.App (T.Const (_, cst), p, proof_false :: rest) when is_false_elim cst ->
+      let prf, _ = parse_proof context proof_false in
+      let p = parse_proposition context p in
+      parse_application context (Ast.FalseElim prf) p rest
+  | T.App (T.Const (_, cst), _, []) when is_false_elim cst ->
+      failwith "We do not yet parse ex_intro applied to not enough arguments."
+      (* false_elim p is a proof of false -> p. *)
   | T.App (T.Const (_, cst), p1, p2 :: p :: proof_p :: proof_and :: rest)
     when is_and_ind cst ->
-      let p1 = parse_proposition set_index name_assoc p1 in
-      let p2 = parse_proposition set_index name_assoc p2 in
-      let p = parse_proposition set_index name_assoc p in
-      let proof_and, _ =
-        parse_proof set_index name_assoc proof_and ctx locals
-      in
-      let h1_name, set_index = get_new_name ("", "Handp") set_index in
-      let h2_name, set_index = get_new_name ("", "Handq") set_index in
-      let proof_p =
-        match proof_p with
-        | T.Lam (_, h1, _, T.Lam (_, h2, _, proof_p)) ->
-            let h1 = B.string_of_ident h1 in
-            let h2 = B.string_of_ident h2 in
-            let name_assoc = (h1, h1_name) :: List.remove_assoc h1 name_assoc in
-            let name_assoc = (h2, h2_name) :: List.remove_assoc h2 name_assoc in
-            let locals = (h1, Ast.HypothesisC p1) :: locals in
-            let locals = (h2, Ast.HypothesisC p2) :: locals in
-            let result =
-              fst (parse_proof set_index name_assoc proof_p ctx locals)
-            in
-            result
-        | _ ->
-            let proof_p, _ =
-              parse_proof set_index name_assoc proof_p ctx locals
-            in
-            let newprop, _ = get_new_name ("", "Hand") set_index in
-            Ast.Cut
-              ( Ast.Implication (p1, Ast.Implication (p2, p)),
-                proof_p,
-                newprop,
-                Ast.Apply
-                  ( newprop,
-                    [
-                      Ast.TProof (Ast.Assumption h1_name);
-                      Ast.TProof (Ast.Assumption h2_name);
-                    ] ) )
-      in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.AndInd (h1_name, p1, h2_name, p2, proof_and, p, proof_p))
-        p ctx locals rest
-  | T.App (T.Const (_, cst), p, q :: r :: proof_r :: proof_and :: rest)
-    when is_and_ind_r cst ->
-      let p = parse_proposition set_index name_assoc p in
-      let q = parse_proposition set_index name_assoc q in
-      let r = parse_proposition set_index name_assoc r in
-      let hname, set_index = get_new_name ("", "Handq") set_index in
-      let proof_and, _ =
-        parse_proof set_index name_assoc proof_and ctx locals
-      in
-      let proof_r =
-        match proof_r with
-        | T.Lam (_, h, _, proof_r) ->
-            let h = B.string_of_ident h in
-            let name_assoc = (h, hname) :: List.remove_assoc h name_assoc in
-            let locals = (h, Ast.HypothesisC q) :: locals in
-            fst (parse_proof set_index name_assoc proof_r ctx locals)
-        | _ ->
-            let proof_r, _ =
-              parse_proof set_index name_assoc proof_r ctx locals
-            in
-            let newprop, _ = get_new_name ("", "Hand") set_index in
-            Ast.Cut
-              ( Ast.Implication (q, r),
-                proof_r,
-                newprop,
-                Ast.Apply (newprop, [ Ast.TProof (Ast.Assumption hname) ]) )
-      in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.AndIndRight (p, hname, q, proof_and, r, proof_r))
-        r ctx locals rest
-  | T.App (T.Const (_, cst), p, q :: r :: proof_r :: proof_and :: rest)
+      parse_and_ind context p1 p2 p proof_p proof_and rest
+  | T.App (T.Const (_, cst), _, _ :: _ :: _) when is_and_ind cst ->
+      failwith "We do not yet parse ex_intro applied to not enough arguments."
+  | T.App (T.Const (_, cst), _, _) when is_and_ind cst ->
+      failwith
+        "and_ind with less than 3 arguments is not a proof of a correct \
+         proposition."
+      (* and_ind p q r prfr is a proof of p /\ q -> r.
+         and_ind p q r is a proof of (p -> q -> r) -> (p /\ q) -> r. *)
+  | T.App (T.Const (_, cst), p1, p2 :: p :: proof_p :: proof_and :: rest)
     when is_and_ind_l cst ->
-      let p = parse_proposition set_index name_assoc p in
-      let q = parse_proposition set_index name_assoc q in
-      let r = parse_proposition set_index name_assoc r in
-      let hname, set_index = get_new_name ("", "Handp") set_index in
-      let proof_and, _ =
-        parse_proof set_index name_assoc proof_and ctx locals
-      in
-      let proof_r =
-        match proof_r with
-        | T.Lam (_, h, _, proof_r) ->
-            let h = B.string_of_ident h in
-            let name_assoc = (h, hname) :: List.remove_assoc h name_assoc in
-            let locals = (h, Ast.HypothesisC p) :: locals in
-            fst (parse_proof set_index name_assoc proof_r ctx locals)
-        | _ ->
-            let proof_r, _ =
-              parse_proof set_index name_assoc proof_r ctx locals
-            in
-            let newprop, _ = get_new_name ("", "Hand") set_index in
-            Ast.Cut
-              ( Ast.Implication (p, r),
-                proof_r,
-                newprop,
-                Ast.Apply (newprop, [ Ast.TProof (Ast.Assumption hname) ]) )
-      in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.AndIndLeft (hname, p, q, proof_and, r, proof_r))
-        r ctx locals rest
+      parse_and_ind_l context p1 p2 p proof_p proof_and rest
+  | T.App (T.Const (_, cst), _, _ :: _ :: _) when is_and_ind_l cst ->
+      failwith "We do not yet parse and_ind_l applied to not enough arguments."
+  | T.App (T.Const (_, cst), _, _) when is_and_ind_l cst ->
+      failwith
+        "and_ind with less than 3 arguments is not a proof of a correct \
+         proposition."
+      (* and_ind_l p q r prfr is a proof of p /\ q -> r.
+         and_ind_l p q r is a proof of (p -> r) -> (p /\ q) -> r. *)
+  | T.App (T.Const (_, cst), p1, p2 :: p :: proof_p :: proof_and :: rest)
+    when is_and_ind_r cst ->
+      parse_and_ind_r context p1 p2 p proof_p proof_and rest
+      (* and_ind_r p q r prfr is a proof of p /\ q -> r.
+         and_ind_r p q r is a proof of (q -> r) -> (p /\ q) -> r. *)
+  | T.App (T.Const (_, cst), _, _ :: _ :: _) when is_and_ind_r cst ->
+      failwith "We do not yet parse ex_intro applied to not enough arguments."
+  | T.App (T.Const (_, cst), _, _) when is_and_ind_r cst ->
+      failwith
+        "and_ind with less than 3 arguments is not a proof of a correct \
+         proposition."
   | T.App (T.Const (_, cst), p, q :: proof :: rest) when is_and_elim_l cst ->
-      let p = parse_proposition set_index name_assoc p in
-      let q = parse_proposition set_index name_assoc q in
-      let proof, _ = parse_proof set_index name_assoc proof ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.AndElimLeft (p, q, proof))
-        p ctx locals rest
+      let p = parse_proposition context p in
+      let q = parse_proposition context q in
+      let proof =
+        match fst (parse_proof context proof) with
+        | Ast.Assumption h -> Ast.AndElimLeft(p, q, h)
+        | proof ->
+            let h, _ = fresh_local_hypothesis context in
+            Ast.Cut
+              ( Ast.Conjonction (p, q),
+                proof,
+                h,
+                Ast.AndElimLeft (p, q, Ast.LocalAssertion h) )
+      in
+      parse_application context proof p rest
+      (* and_elim_l p q is a proof of p /\ q -> p. *)
   | T.App (T.Const (_, cst), p, q :: proof :: rest) when is_and_elim_r cst ->
-      let p = parse_proposition set_index name_assoc p in
-      let q = parse_proposition set_index name_assoc q in
-      let proof, _ = parse_proof set_index name_assoc proof ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.AndElimRight (p, q, proof))
-        q ctx locals rest
+      let p = parse_proposition context p in
+      let q = parse_proposition context q in
+      let proof =
+        match fst (parse_proof context proof) with
+        | Ast.Assumption h -> Ast.AndElimRight(p, q, h)
+        | proof ->
+            let h, _ = fresh_local_hypothesis context in
+            Ast.Cut
+              ( Ast.Conjonction (p, q),
+                proof,
+                h,
+                Ast.AndElimRight (p, q, Ast.LocalAssertion h) )
+      in
+      parse_application context proof p rest
+      (* and_elim_r p q is a proof of p /\ q -> p. *)
   | T.App (T.Const (_, cst), p1, p2 :: p :: proof1 :: proof2 :: proof_or :: rest)
     when is_or_elim cst ->
-      let h1_name, set_index = get_new_name ("", "Horp") set_index in
-      let h2_name, set_index = get_new_name ("", "Horq") set_index in
-      let p1 = parse_proposition set_index name_assoc p1 in
-      let p2 = parse_proposition set_index name_assoc p2 in
-      let p = parse_proposition set_index name_assoc p in
-      let proof1 =
-        match proof1 with
-        | T.Lam (_, h1, _, proof1) ->
-            let h1 = B.string_of_ident h1 in
-            let name_assoc1 =
-              (h1, h1_name) :: List.remove_assoc h1 name_assoc
-            in
-            let locals1 = (h1, Ast.HypothesisC p1) :: locals in
-            fst (parse_proof set_index name_assoc1 proof1 ctx locals1)
-        | _ ->
-            let proof1, _ =
-              parse_proof set_index name_assoc proof1 ctx locals
-            in
-            let newprop, _ = get_new_name ("", "Hor") set_index in
-            Ast.Cut
-              ( Ast.Implication (p1, p),
-                proof1,
-                newprop,
-                Ast.Apply (newprop, [ Ast.TProof (Ast.Assumption h1_name) ]) )
-      in
-      let proof2 =
-        match proof2 with
-        | T.Lam (_, h2, _, proof2) ->
-            let h2 = B.string_of_ident h2 in
-            let name_assoc2 =
-              (h2, h2_name) :: List.remove_assoc h2 name_assoc
-            in
-            let locals2 = (h2, Ast.HypothesisC p2) :: locals in
-            fst (parse_proof set_index name_assoc2 proof2 ctx locals2)
-        | _ ->
-            let proof2, _ =
-              parse_proof set_index name_assoc proof2 ctx locals
-            in
-            let newprop, _ = get_new_name ("", "Hor") set_index in
-            Ast.Cut
-              ( Ast.Implication (p2, p),
-                proof2,
-                newprop,
-                Ast.Apply (newprop, [ Ast.TProof (Ast.Assumption h2_name) ]) )
-      in
-      let proof_or, _ = parse_proof set_index name_assoc proof_or ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.OrInd (p1, p2, p, h1_name, proof1, h2_name, proof2, proof_or))
-        p ctx locals rest
-  (* forall wit, setn, h(predicate wit) => proofp *)
+      parse_or_elim context p1 p2 p proof1 proof2 proof_or rest
+      (* or_elim p q r prf1 prf2 is a proof of p \/ q -> r
+         or_elim p q r prf1 is a proof of (q -> r) -> p \/ q -> r.
+         or_elim p q r is a proof of (p -> r) -> (q -> r) -> p \/ q -> r. *)
   | T.App
       ( T.Const (_, cst),
         T.Const (_, setn),
-        T.Lam (_, x, _, predicate) :: p :: proof_p :: proof_ex :: rest )
+        T.Lam (_, x, _, prop) :: p :: proof_p :: proof_ex :: rest )
     when is_ex_elim cst ->
-      let set = pair_string_of_name setn in
-      let x = B.string_of_ident x in
-      let xname, set_index = get_new_name set set_index in
-      let name_assoc1 = (x, xname) :: List.remove_assoc x name_assoc in
-      let pred = parse_proposition set_index name_assoc1 predicate in
-      let wit_name, set_index = get_new_name ("", snd set) set_index in
-      let h_name, set_index = get_new_name ("", "Hexp") set_index in
-      let p = parse_proposition set_index name_assoc p in
-      let proof_ex, _ = parse_proof set_index name_assoc proof_ex ctx locals in
-      let proof_p =
-        match proof_p with
-        | T.Lam (_, wit, _, T.Lam (_, h, _, proof_p)) ->
-            let wit = B.string_of_ident wit in
-            let name_assoc =
-              (wit, wit_name) :: List.remove_assoc wit name_assoc
-            in
-            let h = B.string_of_ident h in
-            let name_assoc = (h, h_name) :: List.remove_assoc h name_assoc in
-            let locals =
-              ( h,
-                Ast.HypothesisC
-                  (Ast.instantiate xname pred (Ast.ElementCst wit_name)) )
-              :: locals
-            in
-            fst (parse_proof set_index name_assoc proof_p ctx locals)
-        | _ ->
-            let proof_p, _ =
-              parse_proof set_index name_assoc proof_p ctx locals
-            in
-            let newprop, _ = get_new_name ("", "Hex") set_index in
-            let pred =
-              ( set,
-                wit_name,
-                Ast.Implication
-                  (Ast.instantiate xname pred (Ast.ElementCst wit_name), p) )
-            in
-            Ast.Cut
-              ( Ast.Forall pred,
-                proof_p,
-                newprop,
-                Ast.Apply
-                  ( newprop,
-                    [
-                      Ast.TElement (Ast.ElementCst wit_name);
-                      Ast.TProof (Ast.Assumption h_name);
-                    ] ) )
-      in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.ExInd ((set, xname, pred), p, proof_ex, wit_name, h_name, proof_p))
-        p ctx locals rest
+      parse_ex_elim context setn x prop p proof_p proof_ex rest
   | T.App
       ( T.Const (_, cst),
         T.Const (_, set_name),
-        x :: T.Lam (_, h1, _, predicate) :: proof :: y :: proof_eq :: rest )
+        x :: abs :: proof :: y :: proof_eq :: rest )
     when is_eq_ind cst ->
-      let h1 = B.string_of_ident h1 in
-      let h1name, set_index1 = get_new_name ("", "H") set_index in
-      let name_assoc1 = (h1, h1name) :: List.remove_assoc h1 name_assoc in
-      let pred = parse_proposition set_index1 name_assoc1 predicate in
-      let set = pair_string_of_name set_name in
-      let x = parse_element name_assoc x in
-      let y = parse_element name_assoc y in
-      let heq, set_index = get_new_name ("", "Heq") set_index in
-      let hprf, set_index = get_new_name ("", "Heqp") set_index in
-      let proof, _ = parse_proof set_index name_assoc proof ctx locals in
-      let proof_eq, _ = parse_proof set_index name_assoc proof_eq ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.EqElim ((set, h1name, pred), x, y, hprf, proof, heq, proof_eq))
-        (Ast.instantiate h1name pred y)
-        ctx locals rest
+      parse_eq_elim context set_name abs x y proof proof_eq rest
+      (* eq_ind set x P prf y is a proof of x = y -> P(y).
+         eq_ind set x P prf is a proof of forall y, x = y -> P(y).
+         eq_ind set x P is a proof of P(x) -> forall y, x = y -> P(y). *)
   | T.App
       ( T.Const (_, cst),
         T.Const (_, set_name),
-        x :: T.Lam (_, h1, _, predicate) :: proof :: y :: proof_eq :: rest )
+        x :: abs :: proof :: y :: proof_eq :: rest )
     when is_eq_ind_r cst ->
-      let h1 = B.string_of_ident h1 in
-      let h1name, set_index1 = get_new_name ("", "H") set_index in
-      let name_assoc1 = (h1, h1name) :: List.remove_assoc h1 name_assoc in
-      let pred = parse_proposition set_index1 name_assoc1 predicate in
-      let set = pair_string_of_name set_name in
-      let x = parse_element name_assoc x in
-      let y = parse_element name_assoc y in
-      let heq, set_index = get_new_name ("", "Heq") set_index in
-      let hprf, set_index = get_new_name ("", "Heqp") set_index in
-      let proof, _ = parse_proof set_index name_assoc proof ctx locals in
-      let proof_eq, _ = parse_proof set_index name_assoc proof_eq ctx locals in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.EqElimR ((set, h1name, pred), x, y, hprf, proof, heq, proof_eq))
-        (Ast.instantiate h1name pred x)
-        ctx locals rest
+      parse_eq_elim_r context set_name abs x y proof proof_eq rest
+      (* eq_ind_r set x P prf y is a proof of y = x -> P(y).
+         eq_ind_r set x P prf is a proof of forall y, y = x -> P(y).
+         eq_ind_r set x P is a proof of P(x) -> forall y, y = x -> P(y). *)
   | T.App (T.Const (_, cst), T.Const (_, set_name), x :: rest)
     when is_eq_refl cst ->
       let set = pair_string_of_name set_name in
-      let x = parse_element name_assoc x in
-      parse_proof_with_other_args set_index name_assoc
+      let x, _ = parse_element context x in
+      parse_application context
         (Ast.EqRefl (set, x))
         (Ast.Equality (set, x, x))
-        ctx locals rest
+        rest
+      (* eq_refl set is a proof of forall x: set, x = x. *)
   | T.App (T.Const (_, cst), T.Const (_, set_name), x :: y :: proof_eq :: rest)
     when is_eq_sym cst ->
       let set = pair_string_of_name set_name in
-      let x = parse_element name_assoc x in
-      let y = parse_element name_assoc y in
-      let proof_eq, _ = parse_proof set_index name_assoc proof_eq ctx locals in
-      parse_proof_with_other_args set_index name_assoc
+      let x, _ = parse_element context x in
+      let y, _ = parse_element context y in
+      let proof_eq, _ = parse_proof context proof_eq in
+      parse_application context
         (Ast.EqSym (set, x, y, proof_eq))
         (Ast.Equality (set, y, x))
-        ctx locals rest
+        rest
+      (* eq_sym set x y is a proof of x = y -> y = x.
+         eq_sym set x is a proof of forall y: set, x = y -> y = x.
+         eq_sym set is a proof of forall x y: set, x = y -> y = x. *)
   | T.App
       ( T.Const (_, cst),
         T.Const (_, set_name),
         x :: y :: z :: proof_eq1 :: proof_eq2 :: rest )
     when is_eq_trans cst ->
       let set = pair_string_of_name set_name in
-      let x = parse_element name_assoc x in
-      let y = parse_element name_assoc y in
-      let z = parse_element name_assoc z in
-      let proof_eq1, _ =
-        parse_proof set_index name_assoc proof_eq1 ctx locals
-      in
-      let proof_eq2, _ =
-        parse_proof set_index name_assoc proof_eq2 ctx locals
-      in
-      parse_proof_with_other_args set_index name_assoc
+      let x, _ = parse_element context x in
+      let y, _ = parse_element context y in
+      let z, _ = parse_element context z in
+      let proof_eq1, _ = parse_proof context proof_eq1 in
+      let proof_eq2, _ = parse_proof context proof_eq2 in
+      parse_application context
         (Ast.EqTrans (set, x, y, z, proof_eq1, proof_eq2))
         (Ast.Equality (set, x, z))
-        ctx locals rest
-  | T.App
-      (T.Lam (_, id, Some (T.App (_, statement, [])), prf), statement_prf, args)
-    -> (
-      let statement = parse_proposition set_index name_assoc statement in
+        rest
+      (* eq_trans set x y z proof1 is a proof of y = z -> x = z.
+          eq_trans set x y z is a proof of x = y -> y = z -> x = z.
+          eq_trans set x y is a proof of forall z: set, x = y -> y = z -> x = z.
+          eq_trans set x is a proof of forall y z: set, x = y -> y = z -> x = z.
+          eq_trans set is a proof of forall x y z: set, x = y -> y = z -> x = z. *)
+  | T.App (prf, arg, rest) -> parse_app context prf (arg :: rest)
+  | _ -> failwith "not a correct proof"
+
+(** When an application is parsed, then the proof parsed is the
+    elimination of a connective with its rewrite rule. Besides, if the
+    function applied is an abstraction f = (x: El nat => prf) or
+    f = (x: Prf P => prf), then we can replace the application f y by 
+    prf[x/y]. In the case of the elimination of an implication, if y
+    is not an assumption, we replace the proof by "assume P as H, 
+    prf[x/H]."
+**)
+and parse_app (context : context) (prf : T.term) (args : T.term list) :
+    Ast.proof * Ast.proposition =
+  match (prf, args) with
+  | ( T.Lam (_, id, Some (T.App (T.Const (_, cst), T.Const (_, set), [])), prf),
+      x :: args )
+    when is_el cst ->
       let id = B.string_of_ident id in
-      let statement_proof, _ =
-        parse_proof set_index name_assoc statement_prf ctx locals
-      in
-      match statement_proof with
-      (*| Ast.Assumption(v) ->
-          let name_assoc1 = (id, v) :: List.remove_assoc id name_assoc in
-          let locals1 = (id, Ast.HypothesisC statement) :: locals in
-          let prf, result = parse_proof set_index name_assoc1 prf ctx locals1 in
-          parse_proof_with_other_args set_index name_assoc prf result ctx locals args
-        (* Do the same with global assumption *)
-      *)
+      let set = pair_string_of_name set in
+      let x, _ = parse_element context x in
+      let context = define_local_element id context set x in
+      parse_app context prf args
+  | ( T.Lam (_, id, Some (T.App (T.Const (_, cst), statement, [])), prf),
+      prfp :: args )
+    when is_prf cst -> (
+      let id = B.string_of_ident id in
+      let statement = parse_proposition context statement in
+      let prfp, _ = parse_proof context prfp in
+      match prfp with
+      | Ast.Assumption _ ->
+          let context = define_local_hypothesis id context statement prfp in
+          parse_app context prf args
       | _ ->
-          let hname, set_index1 = get_new_name ("", "Hcut") set_index in
-          let name_assoc1 = (id, hname) :: List.remove_assoc id name_assoc in
-          let locals1 = (id, Ast.HypothesisC statement) :: locals in
-          let prf, result =
-            parse_proof set_index1 name_assoc1 prf ctx locals1
-          in
-          parse_proof_with_other_args set_index name_assoc
-            (Ast.Cut (statement, statement_proof, hname, prf))
-            result ctx locals args)
-  | T.App (prf, arg, rest) ->
-      let prf, p = parse_proof set_index name_assoc prf ctx locals in
-      (*begin match p with
-        | Ast.Implication (p, q) when p = q ->
-            let prf, p = parse_proof set_index name_assoc arg ctx locals in
-            parse_proof_with_other_args set_index name_assoc prf p ctx locals rest
-        | _ ->*)
-      parse_proof_with_other_args set_index name_assoc prf p ctx locals
-        (arg :: rest)
-      (*end *)
-
-      (*
-      Cut (p1 -> p2, apply ...,)   
-    *)
-
-      (* Problème ici, pourquoi prendre une fonction en paramètre et pas juste une
-         preuve de p => r. Pareil pour and_ind, ex_elim et or_elim.
-      *)
-      (**** DELETE
-          | T.App(T.Const(_, cst), arg, rest) ->
-            let th = pair_string_of_name cst in
-            let p = begin match List.assoc_opt th ctx with
-              | None -> failwith (Printf.sprintf "%s not in context" (string_of_name cst))
-              | Some(Ast.HypothesisC(p)) -> p
-              | _ -> failwith (Printf.sprintf "%s not a proposition in the context" (string_of_name cst))
-            end in
-            parse_th_proof_with_other_args set_index name_assoc th [] p ctx locals (arg::rest)
-
-        | T.App(prf, arg, rest) ->
-          let (prf, p) = parse_proof set_index name_assoc prf ctx locals in
-          parse_proof_with_other_args set_index name_assoc prf p ctx locals (arg::rest)
-          DELETE ****)
+          let h, context = declare_local_hypothesis id context statement in
+          let prf, ret = parse_app context prf args in
+          (Ast.Cut (statement, prfp, h, prf), ret))
   | _ ->
-      Printf.printf "Not yet implemented proof.\n";
-      (Ast.T, Ast.True)
-(* Now, we just have to deal with applications... *)
-(* Should we authorize connectives uses without elimination rules? Or
-   should we restrict their use in order to not have any proposition
-   as objects?*)
-(*
-    For each connectives, there are two eliminations ways.
-    The first one is the "correct" way. It uses the elimination symbol.
-    the second one uses the reduction rules associated to the connective.
-    
-    For instance, we can either have the proof `and_elim args` or the 
-    proof `(and_proof) args` where `and_proof` is the proof of a 
-    conjunction.
-    
-    Then, when we parse some elements (applications and abstraction),
-    we have to check if they correspond to some proofs used as a
-    theorem.
-  *)
+      let prf, p = parse_proof context prf in
+      parse_application context prf p args
 
-and parse_proof_with_other_args set_index name_assoc prf prop ctx locals args =
-  match (prop, args) with
-  | _, [] -> (prf, prop)
-  | Ast.Implication (p, q), r :: rest -> (
+and parse_application (context : context) (prf : Ast.proof)
+    (p : Ast.proposition) (args : T.term list) : Ast.proof * Ast.proposition =
+  let _ = (args, context) in
+  match (p, args) with
+  | _, [] -> (prf, p)
+  | Ast.True, _ ->
+      failwith "Cannot create proof by applying arguments to a proof of True."
+  | Ast.Implication (_, _), _ | Ast.Forall _, _ -> (
       match prf with
       | Ast.Apply (th, l) ->
-          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "G") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.Apply
-                 ( th,
-                   List.rev (Ast.TProof (Ast.Assumption newprop) :: List.rev l)
-                 ))
-              q ctx locals rest
-          in
-          (Ast.Cut (p, prfp, newprop, prfresult), result)
-      | Ast.ApplyTheorem (th, l) ->
-          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "G") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.ApplyTheorem
-                 ( th,
-                   List.rev (Ast.TProof (Ast.Assumption newprop) :: List.rev l)
-                 ))
-              q ctx locals rest
-          in
-          (Ast.Cut (p, prfp, newprop, prfresult), result)
-      | Ast.GlobalAssumption th ->
-          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "G") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.ApplyTheorem (th, [ Ast.TProof (Ast.Assumption newprop) ]))
-              q ctx locals rest
-          in
-          (Ast.Cut (p, prfp, newprop, prfresult), result)
-      | Ast.Assumption h ->
-          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "G") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.Apply (h, [ Ast.TProof (Ast.Assumption newprop) ]))
-              q ctx locals rest
-          in
-          (Ast.Cut (p, prfp, newprop, prfresult), result)
-      | _ ->
-          Printf.printf "Là";
-          let newprop, set_index = get_new_name ("", "G") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.Apply (newprop, []))
-              prop ctx locals args
-          in
-          (Ast.Cut (Ast.Implication (p, q), prf, newprop, prfresult), result))
-  | Ast.Forall pred, r :: rest -> (
-      let x =
-        match parse_element name_assoc r with
-        | Ast.Variable x -> Ast.ElementCst x
-        | x -> x
-      in
-      let _, id, p = pred in
-      (*Printf.printf "%s %s.\n" id (Coq.coq_string_of_prop p);
-        Printf.printf "inst with %s => %s.\n"
-          (Coq.string_of_coq_element (Coq.translate_element x))
-          (Coq.coq_string_of_prop (Ast.instantiate id p x)); *)
-      match prf with
-      | Ast.Apply (th, l) ->
-          parse_proof_with_other_args set_index name_assoc
-            (Ast.Apply (th, List.rev (Ast.TElement x :: List.rev l)))
-            (Ast.instantiate id p x) ctx locals rest
-      | Ast.ApplyTheorem (th, l) ->
-          parse_proof_with_other_args set_index name_assoc
-            (Ast.ApplyTheorem (th, List.rev (Ast.TElement x :: List.rev l)))
-            (Ast.instantiate id p x) ctx locals rest
-      (* If (Global) Assumption, something to do here *)
-      | Ast.GlobalAssumption th ->
-          parse_proof_with_other_args set_index name_assoc
-            (Ast.ApplyTheorem (th, [ Ast.TElement x ]))
-            (Ast.instantiate id p x) ctx locals rest
-      | Ast.Assumption h ->
-          parse_proof_with_other_args set_index name_assoc
-            (Ast.Apply (h, [ Ast.TElement x ]))
-            (Ast.instantiate id p x) ctx locals rest
-      | _ ->
-          let newprop, set_index = get_new_name ("", "G") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.Apply (newprop, []))
-              prop ctx locals args
-          in
-          (Ast.Cut (Ast.Forall pred, prf, newprop, prfresult), result))
-  | Ast.False, prop :: rest ->
-      let prop = parse_proposition set_index name_assoc prop in
-      let _, prop =
-        parse_proof_with_other_args set_index name_assoc Ast.T prop ctx locals
-          rest
-      in
-      (Ast.FalseElim prf, prop)
-  | Ast.Conjonction (p1, p2), p :: prfp :: rest ->
-      let h1_name, set_index = get_new_name ("", "Hargandp") set_index in
-      let h2_name, set_index = get_new_name ("", "Hargandq") set_index in
-      let p = parse_proposition set_index name_assoc p in
-      let proof_p =
-        match prfp with
-        | T.Lam (_, h1, _, T.Lam (_, h2, _, proof_p)) ->
-            let h1 = B.string_of_ident h1 in
-            let h2 = B.string_of_ident h2 in
-            let name_assoc = (h1, h1_name) :: List.remove_assoc h1 name_assoc in
-            let name_assoc = (h2, h2_name) :: List.remove_assoc h2 name_assoc in
-            fst (parse_proof set_index name_assoc proof_p ctx locals)
-        | _ ->
-            let proof_p, _ = parse_proof set_index name_assoc prfp ctx locals in
-            let newprop, _ = get_new_name ("", "Hargand") set_index in
-            Ast.Cut
-              ( Ast.Implication (p1, Ast.Implication (p2, p)),
-                proof_p,
-                newprop,
-                Ast.Apply
-                  ( newprop,
-                    [
-                      Ast.TProof (Ast.Assumption h1_name);
-                      Ast.TProof (Ast.Assumption h2_name);
-                    ] ) )
-      in
-      parse_proof_with_other_args set_index name_assoc
-        (Ast.AndInd (h1_name, p1, h2_name, p2, prf, p, proof_p))
-        p ctx locals rest
-  | Ast.Conjonction (p1, p2), [ p ] ->
-      let p = parse_proposition set_index name_assoc p in
-      let h_name, set_index = get_new_name ("", "Harg") set_index in
-      let h1_name, set_index = get_new_name ("", "Hargp") set_index in
-      let h2_name, set_index = get_new_name ("", "Hargq") set_index in
-      let newprop, _ = get_new_name ("", "H") set_index in
-      let proof_p =
-        Ast.ImplIntro
-          ( h_name,
-            Ast.Implication (p1, Ast.Implication (p2, p)),
-            Ast.Apply
-              ( newprop,
-                [
-                  Ast.TProof (Ast.Assumption h1_name);
-                  Ast.TProof (Ast.Assumption h2_name);
-                ] ) )
-      in
-      ( Ast.AndInd (h1_name, p1, h2_name, p2, prf, p, proof_p),
-        Ast.Implication (Ast.Implication (p1, Ast.Implication (p2, p)), p) )
-  | Ast.Equality (set, x, y), T.Lam (_, z, _, predicate) :: prf_x :: rest ->
-      let id = B.string_of_ident z in
-      let p = parse_proposition set_index name_assoc predicate in
-      let pred = (set, id, p) in
-      let heq, set_index = get_new_name ("", "H") set_index in
-      let hprf, set_index = get_new_name ("", "H") set_index in
-      let prf_x, _ = parse_proof set_index name_assoc prf_x ctx locals in
-      let prf_y = Ast.EqElim (pred, x, y, hprf, prf_x, heq, prf) in
-      parse_proof_with_other_args set_index name_assoc prf_y
-        (Ast.instantiate id p y) ctx locals rest
-  (*
-(x = y) (P x) (P y)
-
-cut x = y as H
-  - H
-  - cut (P x) as H
-      + proof 
-      + apply (H rest)  
-*)
-  (*TODO HERE *)
-  (* Le cas où pas de prf_x = prouver P(a) => P(b) *)
-  | Ast.Equality (set, x, y), [ T.Lam (_, z, _, predicate) ] ->
-      let id = B.string_of_ident z in
-      let p = parse_proposition set_index name_assoc predicate in
-      let pred = (set, id, p) in
-      let px = Ast.instantiate id p x in
-      let py = Ast.instantiate id p y in
-      let heq, set_index = get_new_name ("", "H") set_index in
-      let hprf, _ = get_new_name ("", "H") set_index in
-      let impl = Ast.Implication (px, py) in
-      ( Ast.ImplIntro
-          ("H", px, Ast.EqElim (pred, x, y, hprf, Ast.Assumption "H", heq, prf)),
-        impl )
-  (*
-    Had to manage other type of propositions, only, propositional variables/constants
-    could not be used to proof another propositions.     
-  *)
-  | Ast.Negation p, r :: rest -> (
-      match prf with
-      | Ast.Apply (th, l) ->
-          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "Hargneg") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.Apply
-                 ( th,
-                   List.rev (Ast.TProof (Ast.Assumption newprop) :: List.rev l)
-                 ))
-              Ast.False ctx locals rest
-          in
-          (Ast.Cut (p, prfp, newprop, prfresult), result)
-      | Ast.ApplyTheorem (th, l) ->
-          let prfp, _ = parse_proof set_index name_assoc r ctx locals in
-          let newprop, set_index = get_new_name ("", "Hargneg") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.ApplyTheorem
-                 ( th,
-                   List.rev (Ast.TProof (Ast.Assumption newprop) :: List.rev l)
-                 ))
-              False ctx locals rest
-          in
-          (Ast.Cut (p, prfp, newprop, prfresult), result)
-      | _ ->
-          let newprop, set_index = get_new_name ("", "Hargneg") set_index in
-          let prfresult, result =
-            parse_proof_with_other_args set_index name_assoc
-              (Ast.Apply (newprop, []))
-              prop ctx locals args
-          in
-          (Ast.Cut (Ast.Negation p, prf, newprop, prfresult), result))
+          parse_arguments context p args
+            (fun l -> Ast.Apply (th, l))
+            (List.rev l)
+      | Ast.Assumption th ->
+          parse_arguments context p args (fun l -> Ast.Apply (th, l)) []
+      | Ast.ImplIntro (_, _, _) | Ast.ForallIntro (_, _) ->
+          failwith
+            "Proof in parse_application cannot be introducation of\n\
+            \          forall or implication (would be managed by parse_app)."
+      | _ -> (
+          let h, context = fresh_local_hypothesis context in
+          match p with
+          | Ast.Implication (_, _) ->
+              parse_arguments context p args
+                (fun l ->
+                  Ast.Cut (p, prf, h, Ast.Apply (Ast.LocalAssertion h, l)))
+                []
+          | _ ->
+              parse_arguments context p args
+                (fun l ->
+                  Ast.Cut (p, prf, h, Ast.Apply (Ast.LocalAssertion h, l)))
+                []))
+  | Ast.False, p :: rest ->
+      let p = parse_proposition context p in
+      parse_application context (Ast.FalseElim prf) p rest
+  | Ast.Negation p, args ->
+      parse_application context prf (Ast.Implication (p, Ast.False)) args
+  (* Here again, disjonction and conjonction could take less arguments. *)
+  | Ast.Disjonction (p1, p2), q :: prf_p1_imp_q :: prf_p2_imp_q :: rest ->
+      parse_or_elim_ context p1 p2
+        (parse_proposition context q)
+        prf_p1_imp_q prf_p2_imp_q prf rest
+  | Ast.Disjonction _, _ ->
+      failwith
+        "We do not yet parse disjonction proof applied to not enough arguments."
+  | Ast.Conjonction (p1, p2), q :: prfimp :: rest ->
+      parse_and_ind_ context p1 p2
+        (parse_proposition context q)
+        prfimp prf rest
+  | Ast.Conjonction _, _ ->
+      failwith
+        "We do not yet parse conjonction proof applied to not enough arguments."
+  | Ast.Exists abs, p :: prf_imp :: rest ->
+      parse_ex_elim_ context abs (parse_proposition context p) prf_imp prf rest
+  | Ast.Exists _, _ ->
+      failwith
+        "We do not yet parse exists proof applied to not enough arguments."
   | Ast.NotEquality (set, x, y), _ ->
-      parse_proof_with_other_args set_index name_assoc prf
+      parse_application context prf
         (Ast.Negation (Ast.Equality (set, x, y)))
-        ctx locals args
-  | _ ->
-      (*let _ = Printf.printf "%s\n" (Coq.coq_string_of_prop prop) in *)
-      failwith "booh, not yet implemented"
+        args
+  | Ast.Equality (set, x, y), abs :: prfx :: args ->
+      parse_eq_elim_ context set abs x y prfx prf args
+  | Ast.Equality _, _ ->
+      failwith
+        "We do not yet parse equality proof applied to not enough arguments."
+  | Ast.PredicateCall (predicate_name, params), args ->
+      (*begin match get_global_type predicate_name context with
+          | None -> failwith "JJJJ"
+          | _ -> failwithh "todo"
+        end *)
+      let _ = (predicate_name, params, args) in
+      failwith "predicate todo"
+  | Ast.GlobalProposition _, _ -> failwith "global propo todo"
 
-let parse_basic_declaration name decl =
+and parse_arguments (context : context) (p : Ast.proposition)
+    (args : T.term list) (f : Ast.term list -> Ast.proof)
+    (current_args : Ast.term list) : Ast.proof * Ast.proposition =
+  match (p, args) with
+  | Ast.Implication (p, q), prf :: rest -> (
+      match fst (parse_proof context prf) with
+      | Ast.Assumption h ->
+          parse_arguments context q rest f (TAssertion h :: current_args)
+      | prf ->
+          let hp, context = fresh_local_hypothesis context in
+          let prfret, ret =
+            parse_arguments context q rest f
+              (TAssertion (LocalAssertion hp) :: current_args)
+          in
+          (Ast.Cut (p, prf, hp, prfret), ret))
+  | Ast.Forall (_, id, p), x :: rest ->
+      let x =
+        match fst (parse_element context x) with
+        | Ast.Variable x -> Ast.ElementCst x
+        | y -> y
+      in
+      parse_arguments context
+        (Ast.instantiate_in_prop id x p)
+        rest f
+        (TElement x :: current_args)
+  | _ -> parse_application context (f (List.rev current_args)) p args
+
+and parse_eq_elim (context : context) (set_name : B.name) (abs : T.term)
+    (x : T.term) (y : T.term) (proof : T.term) (proof_eq : T.term)
+    (args : T.term list) : Ast.proof * Ast.proposition =
+  let x, _ = parse_element context x in
+  let y, _ = parse_element context y in
+  let set_name = pair_string_of_name set_name in
+  let proof_eq, _ = parse_proof context proof_eq in
+  parse_eq_elim_ context set_name abs x y proof proof_eq args
+
+and parse_eq_elim_ (context : context) (set_name : Ast.name) (abs : T.term)
+    (x : Ast.element) (y : Ast.element) (proof : T.term) (proof_eq : Ast.proof)
+    (args : T.term list) : Ast.proof * Ast.proposition =
+  let h1, prop =
+    match parse_predicate_definition context abs with
+    | [ (h1, _) ], prop -> (h1, prop)
+    | _ -> failwith "eq_ind waits for a predicate on one element."
+  in
+  let proof_builder, context =
+    match fst (parse_proof context proof) with
+    | Ast.Assumption hprf ->
+        ( (fun heq -> Ast.EqElim ((set_name, h1, prop), x, y, hprf, heq)),
+          context )
+    | proof ->
+        let hprf, context = fresh_local_hypothesis context in
+        ( (fun heq ->
+            Ast.Cut
+              ( Ast.instantiate_in_prop h1 x prop,
+                proof,
+                hprf,
+                Ast.EqElim
+                  ((set_name, h1, prop), x, y, Ast.LocalAssertion hprf, heq) )),
+          context )
+  in
+  let proof, context =
+    match proof_eq with
+    | Ast.Assumption heq -> (proof_builder heq, context)
+    | proof_eq ->
+        let heq, context = fresh_local_hypothesis context in
+        ( Ast.Cut
+            ( Ast.Equality (set_name, x, y),
+              proof_eq,
+              heq,
+              proof_builder (Ast.LocalAssertion heq) ),
+          context )
+  in
+  parse_application context proof (Ast.instantiate_in_prop h1 y prop) args
+
+and parse_eq_elim_r (context : context) (set_name : B.name) (abs : T.term)
+    (x : T.term) (y : T.term) (proof : T.term) (proof_eq : T.term)
+    (args : T.term list) : Ast.proof * Ast.proposition =
+  let x, _ = parse_element context x in
+  let y, _ = parse_element context y in
+  let set_name = pair_string_of_name set_name in
+  let proof_eq, _ = parse_proof context proof_eq in
+  parse_eq_elim_r_ context set_name abs x y proof proof_eq args
+
+and parse_eq_elim_r_ (context : context) (set_name : Ast.name) (abs : T.term)
+    (x : Ast.element) (y : Ast.element) (proof : T.term) (proof_eq : Ast.proof)
+    (args : T.term list) : Ast.proof * Ast.proposition =
+  let h1, prop =
+    match parse_predicate_definition context abs with
+    | [ (h1, _) ], prop -> (h1, prop)
+    | _ -> failwith "eq_ind_r waits for a predicate on one element."
+  in
+  let proof_builder, context =
+    match fst (parse_proof context proof) with
+    | Ast.Assumption hprf ->
+        ( (fun heq -> Ast.EqElimR ((set_name, h1, prop), x, y, hprf, heq)),
+          context )
+    | proof ->
+        let hprf, context = fresh_local_hypothesis context in
+        ( (fun heq ->
+            Ast.Cut
+              ( Ast.instantiate_in_prop h1 x prop,
+                proof,
+                hprf,
+                Ast.EqElimR
+                  ((set_name, h1, prop), x, y, Ast.LocalAssertion hprf, heq) )),
+          context )
+  in
+  let proof, context =
+    match proof_eq with
+    | Ast.Assumption heq -> (proof_builder heq, context)
+    | proof_eq ->
+        let heq, context = fresh_local_hypothesis context in
+        ( Ast.Cut
+            ( Ast.Equality (set_name, y, x),
+              proof_eq,
+              heq,
+              proof_builder (Ast.LocalAssertion heq) ),
+          context )
+  in
+  parse_application context proof (Ast.instantiate_in_prop h1 y prop) args
+
+and parse_or_elim (context : context) (p1 : T.term) (p2 : T.term) (p : T.term)
+    (proof1 : T.term) (proof2 : T.term) (proof_or : T.term) (args : T.term list)
+    =
+  let p1 = parse_proposition context p1 in
+  let p2 = parse_proposition context p2 in
+  let p = parse_proposition context p in
+  let proof_or, _ = parse_proof context proof_or in
+  parse_or_elim_ context p1 p2 p proof1 proof2 proof_or args
+
+and parse_or_elim_ (context : context) (p1 : Ast.proposition)
+    (p2 : Ast.proposition) (p : Ast.proposition) (proof1 : T.term)
+    (proof2 : T.term) (proof_or : Ast.proof) (args : T.term list) =
+  let hp1, prf1, _ =
+    create_hypothesis_and_implication_proof context proof1 p1 p
+  in
+  let hp2, prf2, _ =
+    create_hypothesis_and_implication_proof context proof2 p2 p
+  in
+  let proof =
+    match proof_or with
+    | Ast.Assumption h -> Ast.OrInd (p1, p2, h, p, hp1, prf1, hp2, prf2)
+    | _ ->
+        let h, _ = fresh_local_hypothesis context in
+        Ast.Cut
+          ( Ast.Disjonction (p1, p2),
+            proof_or,
+            h,
+            Ast.OrInd (p1, p2, Ast.LocalAssertion h, p, hp1, prf1, hp2, prf2) )
+  in
+  parse_application context proof p args
+
+and create_hypothesis_and_implication_proof (context : context) (proof : T.term)
+    (p : Ast.proposition) (q : Ast.proposition) : string * Ast.proof * context =
+  match fst (parse_proof context proof) with
+  | Ast.ImplIntro (hp1, _, prf) -> (hp1, prf, context)
+  | Ast.Assumption h ->
+      let hp1, context = fresh_local_hypothesis context in
+      (hp1, Ast.Apply (h, [ Ast.TAssertion (Ast.LocalAssertion hp1) ]), context)
+  | prf ->
+      let hp1, context = fresh_local_hypothesis context in
+      let himp, context = fresh_local_hypothesis context in
+      ( hp1,
+        Ast.Cut
+          ( Ast.Implication (p, q),
+            prf,
+            himp,
+            Ast.Apply
+              ( Ast.LocalAssertion himp,
+                [ Ast.TAssertion (Ast.LocalAssertion hp1) ] ) ),
+        context )
+
+and parse_and_ind (context : context) (p1 : T.term) (p2 : T.term) (p : T.term)
+    (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
+  let p1 = parse_proposition context p1 in
+  let p2 = parse_proposition context p2 in
+  let p = parse_proposition context p in
+  let proof_and, _ = parse_proof context proof_and in
+  parse_and_ind_ context p1 p2 p proof_p proof_and args
+
+and parse_and_ind_ (context : context) (p1 : Ast.proposition)
+    (p2 : Ast.proposition) (p : Ast.proposition) (proof_p : T.term)
+    (proof_and : Ast.proof) (args : T.term list) =
+  let hp1, hp2, prfp, _ =
+    match proof_p with
+    | T.Lam (_, hp1, _, proof) ->
+        let hp1 = B.string_of_ident hp1 in
+        let hp1, context = declare_local_hypothesis hp1 context p1 in
+        let hp2, proof, context =
+          create_hypothesis_and_implication_proof context proof p2 p
+        in
+        (hp1, hp2, proof, context)
+    | _ ->
+        let hp1, context = fresh_local_hypothesis context in
+        let hp2, context = fresh_local_hypothesis context in
+        let proof =
+          match fst (parse_proof context proof_p) with
+          | Ast.Assumption h ->
+              Ast.Apply
+                ( h,
+                  [
+                    Ast.TAssertion (Ast.LocalAssertion hp1);
+                    Ast.TAssertion (Ast.LocalAssertion hp2);
+                  ] )
+          | prfimp ->
+              let cutprop = Ast.Implication (Ast.Implication (p1, p2), p) in
+              let hcut, _ = fresh_local_hypothesis context in
+              Ast.Cut
+                ( cutprop,
+                  prfimp,
+                  hcut,
+                  Ast.Apply
+                    ( Ast.LocalAssertion hcut,
+                      [
+                        Ast.TAssertion (Ast.LocalAssertion hp1);
+                        Ast.TAssertion (Ast.LocalAssertion hp2);
+                      ] ) )
+        in
+        (hp1, hp2, proof, context)
+  in
+  let proof =
+    match proof_and with
+    | Ast.Assumption h -> Ast.AndInd (p1, p2, h, p, hp1, hp2, prfp)
+    | _ ->
+        let h, _ = fresh_local_hypothesis context in
+        Ast.Cut
+          ( Ast.Conjonction (p1, p2),
+            proof_and,
+            h,
+            Ast.AndInd (p1, p2, Ast.LocalAssertion h, p, hp1, hp2, prfp) )
+  in
+  parse_application context proof p args
+
+and parse_and_ind_l (context : context) (p1 : T.term) (p2 : T.term)
+    (p : T.term) (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
+  let p1 = parse_proposition context p1 in
+  let p2 = parse_proposition context p2 in
+  let p = parse_proposition context p in
+  let proof_and, _ = parse_proof context proof_and in
+  let hp1, prfp, _ =
+    create_hypothesis_and_implication_proof context proof_p p1 p
+  in
+  let proof =
+    match proof_and with
+    | Ast.Assumption h -> Ast.AndIndLeft (p1, p2, h, p, hp1, prfp)
+    | _ ->
+        let h, _ = fresh_local_hypothesis context in
+        Ast.Cut
+          ( Ast.Conjonction (p1, p2),
+            proof_and,
+            h,
+            Ast.AndIndLeft (p1, p2, Ast.LocalAssertion h, p, hp1, prfp) )
+  in
+  parse_application context proof p args
+
+and parse_and_ind_r (context : context) (p1 : T.term) (p2 : T.term)
+    (p : T.term) (proof_p : T.term) (proof_and : T.term) (args : T.term list) =
+  let p1 = parse_proposition context p1 in
+  let p2 = parse_proposition context p2 in
+  let p = parse_proposition context p in
+  let proof_and, _ = parse_proof context proof_and in
+  let hp2, prfp, _ =
+    create_hypothesis_and_implication_proof context proof_p p2 p
+  in
+let proof =
+  match proof_and with
+  | Ast.Assumption h -> Ast.AndIndRight (p1, p2, h, p, hp2, prfp)
+  | _ ->
+      let h, _ = fresh_local_hypothesis context in
+      Ast.Cut
+        ( Ast.Conjonction (p1, p2),
+          proof_and,
+          h,
+          Ast.AndIndRight (p1, p2, Ast.LocalAssertion h, p, hp2, prfp) )
+in
+parse_application context proof p args
+
+and parse_ex_elim_ (context : context) (abs : Ast.abstraction)
+    (q : Ast.proposition) (proof_imp : T.term) (proof_ex : Ast.proof)
+    (args : T.term list) : Ast.proof * Ast.proposition =
+  let set, x, prop = abs in
+  let wit_name, hp, proof_imp, _ =
+    match proof_imp with
+    | T.Lam (_, wit, _, proof) ->
+        let wit = B.string_of_ident wit in
+        let wit_name, context = declare_local_element wit context set in
+        let p = Ast.instantiate_in_prop x (Ast.ElementCst wit_name) prop in
+        let hp, proof, context =
+          create_hypothesis_and_implication_proof context proof p q
+        in
+        (wit_name, hp, proof, context)
+    | _ ->
+        let wit_name, context = fresh_local_element set context in
+        let wit = Ast.Variable wit_name in
+        let hp, context = fresh_local_hypothesis context in
+        let proof =
+          match fst (parse_proof context proof_imp) with
+          | Ast.Assumption h ->
+              Ast.Apply (h, [ Ast.TElement wit; Ast.TAssertion (Ast.LocalAssertion hp) ])
+          | prfimp ->
+              let cutprop = Ast.Implication (Ast.Forall abs, q) in
+              let hcut, _ = fresh_local_hypothesis context in
+              Ast.Cut
+                ( cutprop,
+                  prfimp,
+                  hcut,
+                  Ast.Apply
+                    (Ast.LocalAssertion(hcut), [ Ast.TElement wit; Ast.TAssertion (Ast.LocalAssertion hp) ])
+                )
+        in
+        (wit_name, hp, proof, context)
+  in
+  let proof =
+    match proof_ex with
+    | Ast.Assumption h -> Ast.ExInd (abs, h, q, wit_name, hp, proof_imp)
+    | _ ->
+        let h, _ = fresh_local_hypothesis context in
+        Ast.Cut
+          ( Ast.Exists (abs),
+            proof_ex,
+            h,
+            Ast.ExInd (abs, Ast.LocalAssertion(h), q, wit_name, hp, proof_imp))
+  in
+
+  parse_application context proof q args
+
+and parse_ex_elim (context : context) (setn : B.name) (x : B.ident)
+    (prop : T.term) (p : T.term) (proof_p : T.term) (proof_ex : T.term)
+    (rest : T.term list) : Ast.proof * Ast.proposition =
+  let _ = (context, setn, x, prop, p, proof_p, proof_ex, rest) in
+  let set = pair_string_of_name setn in
+  let x = B.string_of_ident x in
+  let x, context_pred = declare_local_element x context set in
+  let prop = parse_proposition context_pred prop in
+  let p = parse_proposition context p in
+  let proof_ex, _ = parse_proof context proof_ex in
+  parse_ex_elim_ context (set, x, prop) p proof_p proof_ex rest
+
+let parse_basic_declaration context name decl =
   match decl with
-  | T.Const (_, cst) when is_set cst -> (Ast.Set, Ast.SetC)
+  | T.Const (_, cst) when is_set cst -> Ast.Set
   | T.App (T.Const (_, cst), T.Const (_, set), []) when is_el cst ->
       let set = pair_string_of_name set in
-      (Ast.Element set, Ast.ElementC set)
+      Ast.Element set
   | T.App (T.Const (_, cst), args, []) when is_predicate cst ->
-      let args = parse_set_list name args in
-      (Ast.PredicateSymbol args, Ast.PredicateC args)
+      let args = parse_set_list context name args in
+      Ast.PredicateSymbol args
   | T.App (T.Const (_, cst), args, [ T.Const (_, return) ]) when is_function cst
     ->
-      let args = parse_set_list name args in
+      let args = parse_set_list context name args in
       let ret_type = pair_string_of_name return in
-      (Ast.FunctionSymbol (args, ret_type), Ast.FunctionC (args, ret_type))
+      Ast.FunctionSymbol (args, ret_type)
   | T.App (T.Const (_, cst), statement, []) when is_prf cst ->
-      let statement = parse_proposition [] [] statement in
-      (Ast.Axiom statement, Ast.HypothesisC statement)
+      let statement = parse_proposition context statement in
+      Ast.Axiom statement
   | _ ->
       raise
         (ParsingError
@@ -940,39 +1018,39 @@ let parse_basic_declaration name decl =
 
 let parse_basic_definition ty te ctx =
   match ty with
+  | T.App (T.Const (_, cst), T.Const (_, set), []) when is_el cst ->
+      let set = pair_string_of_name set in
+      let el, _ = parse_element ctx te in
+      let _ = el in
+      Ast.Element set
   | T.App (T.Const (_, cst), _, []) when is_predicate cst ->
-      let args, te = parse_predicate_definition [] [] te in
-      let args_type = List.map snd args in
-      (Ast.Predicate (args, te), Ast.PredicateC args_type)
+      let args, te = parse_predicate_definition ctx te in
+      Ast.Predicate (args, te)
   | T.App (T.Const (_, cst), _, [ ret ]) when is_function cst ->
-      let args, te = parse_function_definition [] [] te in
+      let args, (te, _) = parse_function_definition ctx te in
       let ret_type =
         match ret with
         | T.Const (_, cst) -> pair_string_of_name cst
         | _ -> failwith "Return type of a function should be a set."
       in
-      let args_type = List.map snd args in
-      (Ast.Function (args, ret_type, te), Ast.FunctionC (args_type, ret_type))
+      Ast.Function (args, ret_type, te)
   | T.App (T.Const (_, cst), proposition, []) when is_prf cst ->
-      let _ = (parse_proposition [] [], proposition) in
-      let proof, prop = parse_proof [] [] te ctx [] in
-      (Ast.Theorem (prop, proof), Ast.HypothesisC prop)
+      let _ = proposition in
+      let proof, prop = parse_proof ctx te in
+      Ast.Theorem (prop, proof)
   | _ -> failwith "Error, we can only define functions, predicate and theorems."
 
-let parse_entry mname ctx e =
+let parse_entry (mname : string) globals e =
+  let ctx : context = (new_parsing_context, globals) in
   match e with
   | E.Decl (_, id, _, _, decl) ->
       let name = B.string_of_ident id in
-      (*let _ = Printf.printf "Parsing declaration %s.%s...\n" mname name in *)
-      let e, ce = parse_basic_declaration name decl in
-      (*let _ = Printf.printf "Declaration %s parsed\n" name in *)
-      (((mname, name), e), ((mname, name), ce))
+      let e = parse_basic_declaration ctx name decl in
+      ((mname, name), e)
   | E.Def (_, id, _, _, Some ty, te) ->
       let name = B.string_of_ident id in
-      (* let _ = Printf.printf "Parsing definition %s...\n" name in *)
-      let e, ce = parse_basic_definition ty te ctx in
-      (* let _ = Printf.printf "Definition %s parsed\n" name in  *)
-      (((mname, name), e), ((mname, name), ce))
+      let e = parse_basic_definition ty te ctx in
+      ((mname, name), e)
   | _ ->
       raise
         (ParsingError
