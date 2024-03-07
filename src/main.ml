@@ -1,7 +1,6 @@
 module Files = Api.Files
 module P = Parsers.Parser
 
-
 let test file out ctx entry : Ast._global_context =
   let name, entry = Parse.parse_entry file ctx entry in
   Printf.fprintf out "%s\n\n" (Coq.string_of_decl (name, entry));
@@ -42,8 +41,8 @@ let dep_of_file folder file =
   Extras.StrSet.elements deps
 
 let rec parse_module folder dones_and_ctx file =
-  let dones, todo, ctx = dones_and_ctx in
-  if List.mem file dones && not (List.mem file todo) then (dones, todo, ctx)
+  let dones, ctx = dones_and_ctx in
+  if List.mem file dones then (dones, ctx)
   else
     let deps = dep_of_file folder file in
     let deps_files =
@@ -52,17 +51,15 @@ let rec parse_module folder dones_and_ctx file =
           x <> "plth" && x <> "logic" && x <> file && not (List.mem x dones))
         deps
     in
-    let todo = List.append todo deps_files in
     let dones = file :: dones in
-    let todo = List.filter (fun x -> x != file) todo in
-    let dones, todo, ctx =
-      List.fold_left (parse_module folder) (dones, todo, ctx) deps_files
+    let dones, ctx =
+      List.fold_left (parse_module folder) (dones, ctx) deps_files
     in
     let ctx =
       parse_file folder ctx file
         (List.filter (fun x -> x <> "plth" && x <> "logic" && x <> file) deps)
     in
-    (dones, todo, ctx)
+    (dones, ctx)
 
 let rec parse_all folder dones_and_ctx = function
   | [] -> dones_and_ctx
@@ -72,9 +69,10 @@ let rec parse_all folder dones_and_ctx = function
 let main folder input_files =
   Printf.printf "Beginning the translation of %s.\n" folder;
   let _ = Api.Files.add_path folder in
-  parse_all folder ([], input_files, Ast.empty_global_context) input_files
+  parse_all folder ([], Ast.empty_global_context) input_files
 
 let folder = Sys.argv.(1)
+
 let input_files =
   let list_files = Sys.readdir folder in
   List.filter (fun x -> Filename.extension x = ".dk") (Array.to_list list_files)
