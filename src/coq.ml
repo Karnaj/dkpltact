@@ -161,75 +161,6 @@ let rec string_of_prop prop =
       Printf.sprintf "exists (%s: %s), %s" x (string_of_name set)
         (string_of_prop prop)
 
-type proof_step = Command of string | Step of proof_step list
-
-let symbol_list = [| '-'; '+'; '*' |]
-
-let get_symbol i =
-  let bullet = symbol_list.(i mod 3) in
-  String.make (1 + (i / 3)) bullet
-
-let rec indent_coq_string_of_string_step_bullet deep i proof =
-  match proof with
-  | Command str -> Printf.sprintf "%s%s" deep str
-  | Step [] -> ""
-  | Step (fst :: list) ->
-      let symbol = get_symbol i in
-      let str =
-        Printf.sprintf "%s%s %s" deep symbol
-          (indent_coq_string_of_string_step_bullet "" i fst)
-      in
-      let deep =
-        Printf.sprintf "%s%s" deep (String.make (1 + String.length symbol) ' ')
-      in
-      let f step = indent_coq_string_of_string_step_bullet deep (i + 1) step in
-      let str =
-        List.fold_left
-          (fun str step -> Printf.sprintf "%s\n%s" str (f step))
-          str list
-      in
-      str
-
-let rec coq_string_of_string_step_bullet deep i proof =
-  match proof with
-  | Command str -> Printf.sprintf "%s%s" deep str
-  | Step [] -> ""
-  | Step (fst :: list) ->
-      let symbol = get_symbol i in
-      let str =
-        Printf.sprintf "%s %s" symbol
-          (coq_string_of_string_step_bullet "" i fst)
-      in
-      let deep =
-        Printf.sprintf "%s" (String.make (1 + String.length symbol) ' ')
-      in
-      let f step = coq_string_of_string_step_bullet deep (i + 1) step in
-      let str =
-        List.fold_left
-          (fun str step -> Printf.sprintf "%s\n%s" str (f step))
-          str list
-      in
-      str
-
-let rec coq_string_of_string_step_braces deep proof =
-  match proof with
-  | Command str -> Printf.sprintf "%s%s" deep str
-  | Step [] -> ""
-  | Step (fst :: list) ->
-      let f step =
-        coq_string_of_string_step_braces (Printf.sprintf "%s  " deep) step
-      in
-      let str =
-        Printf.sprintf "%s{\n%s  %s" deep deep
-          (coq_string_of_string_step_braces "" fst)
-      in
-      let str =
-        List.fold_left
-          (fun str step -> Printf.sprintf "%s\n%s" str (f step))
-          str list
-      in
-      Printf.sprintf "%s\n%s}" str deep
-
 let rec get_all_intros args p =
   match p with
   | Ast.ForallIntro ((_, x, _), proof) -> get_all_intros (x :: args) proof
@@ -253,91 +184,95 @@ let string_of_app th args : string =
        "" args)
 
 let apply th args : string = Printf.sprintf "apply (%s)" (string_of_app th args)
+let symbol_list = [| '-'; '+'; '*' |]
 
-let rec coq_string_step_of_proof p ctx =
+let get_symbol i =
+  let bullet = symbol_list.(i mod 3) in
+  String.make (1 + (i / 3)) bullet
+
+let rec no_block_proof p indent i = string_of_proof p indent i
+
+and not_indented_block_proof p indent i =
+  let symbol = get_symbol i in
+  let _ = indent in
+  let size = String.length symbol in
+  let indent = String.make (size + 1) ' ' in
+  let str = string_of_proof p indent (i + 1) in
+  symbol ^ String.sub str size (String.length str - size)
+
+and indented_block_proof p indent i =
+  let symbol = get_symbol i in
+  let size = String.length symbol in
+  let str = string_of_proof p (indent ^ String.make (size + 1) ' ') (i + 1) in
+  let size = size + String.length indent in
+  indent ^ symbol ^ String.sub str size (String.length str - size)
+
+and block_proof p indent i = not_indented_block_proof p indent i
+
+and string_of_proof p indent i =
   match p with
-  | Ast.T -> [ Command "apply I." ]
+  | Ast.T -> Printf.sprintf "%sapply I." indent
   | Ast.Assumption x ->
-      [ Command (Printf.sprintf "exact %s." (string_of_assertion x)) ]
+      Printf.sprintf "%sexact %s." indent (string_of_assertion x)
   | Ast.FalseElim (Ast.Assumption x) ->
-      [ Command (Printf.sprintf "contradiction %s." (string_of_assertion x)) ]
+      Printf.sprintf "%scontradiction %s." indent (string_of_assertion x)
   | Ast.FalseElim (Ast.Apply (f, l)) ->
-      [ Command (Printf.sprintf "contradiction (%s)." (string_of_app f l)) ]
+      Printf.sprintf "%scontradiction (%s)." indent (string_of_app f l)
   | Ast.FalseElim p ->
-      let l = coq_string_step_of_proof p ctx in
-      Command "exfalso." :: l
+      let p = string_of_proof p indent i in
+      Printf.sprintf "%sexfalso,\n%s" indent p
   | Ast.AndIntro (_, _, p1, p2) ->
-      let l1 = coq_string_step_of_proof p1 ctx in
-      let l2 = coq_string_step_of_proof p2 ctx in
-      [ Command "split."; Step l1; Step l2 ]
+      let p1 = block_proof p1 indent i in
+      let p2 = block_proof p2 indent i in
+      Printf.sprintf "%ssplit.\n%s\n%s" indent p1 p2
   | Ast.AndInd (_, _, h, _, hp, hq, prf) ->
-      let str =
-        Printf.sprintf "inversion %s as [%s %s]." (string_of_assertion h) hp hq
-      in
-      let l = coq_string_step_of_proof prf ctx in
-      Command str :: l
-  | Ast.AndIndRight (_, _, h, _, hp, prf) ->
-      let str =
-        Printf.sprintf "inversion %s as [_ %s]." (string_of_assertion h) hp
-      in
-      let l = coq_string_step_of_proof prf ctx in
-      Command str :: l
-  | Ast.AndIndLeft (_, _, h, _, hq, prf) ->
-      let str =
-        Printf.sprintf "inversion %s as [%s _]." (string_of_assertion h) hq
-      in
-      let l = coq_string_step_of_proof prf ctx in
-      Command str :: l
-  | Ast.AndElimRight (_, _, h) | Ast.AndElimLeft (_, _, h) ->
-      let str = Printf.sprintf "now inversion %s." (string_of_assertion h) in
-      [ Command str ]
+      let prf = string_of_proof prf indent i in
+      Printf.sprintf "%sinversion %s as [%s %s].\n%s" indent
+        (string_of_assertion h) hp hq prf
+  | Ast.AndIndRight (_, _, h, _, hq, prf) ->
+      let prf = string_of_proof prf indent i in
+      Printf.sprintf "%sinversion %s as [_ %s].\n%s" indent
+        (string_of_assertion h) hq prf
+  | Ast.AndIndLeft (_, _, h, _, hp, prf) ->
+      let prf = string_of_proof prf indent i in
+      Printf.sprintf "%sinversion %s as [%s _].\n%s" indent
+        (string_of_assertion h) hp prf
+  | Ast.AndElimRight (_, _, h) ->
+      Printf.sprintf "%snow inversion %s." indent (string_of_assertion h)
+  | Ast.AndElimLeft (_, _, h) ->
+      Printf.sprintf "%snow inversion %s." indent (string_of_assertion h)
   | Ast.OrIntroL (_, _, prf) ->
-      let str = coq_string_step_of_proof prf ctx in
-      Command "left." :: str
+      let str = string_of_proof prf indent i in
+      Printf.sprintf "%sleft.\n%s" indent str
   | Ast.OrIntroR (_, _, prf) ->
-      let str = coq_string_step_of_proof prf ctx in
-      Command "right." :: str
+      let str = string_of_proof prf indent i in
+      Printf.sprintf "%sright.\n%s" indent str
   | Ast.OrInd (_, _, h, _, hleft, proofleft, hright, proofright) ->
-      let str1 =
-        Printf.sprintf "inversion %s as [%s|%s]." (string_of_assertion h) hleft
-          hright
-      in
-      let strleft = coq_string_step_of_proof proofleft ctx in
-      let strright = coq_string_step_of_proof proofright ctx in
-      [ Command str1; Step strleft; Step strright ]
+      let strleft = block_proof proofleft indent i in
+      let strright = block_proof proofright indent i in
+      Printf.sprintf "%sinversion %s as [%s|%s].\n%s\n%s" indent
+        (string_of_assertion h) hleft hright strleft strright
   | Ast.ExIntro (_, x, prf) ->
-      let str = Printf.sprintf "exists %s." (string_of_element x) in
-      let str1 = coq_string_step_of_proof prf ctx in
-      Command str :: str1
+      let prf = block_proof prf indent i in
+      Printf.sprintf "%sexists %s.\n%s" indent (string_of_element x) prf
   | Ast.ExInd (_, h, _, wit_name, hp, proof_p) ->
-      let str =
-        Printf.sprintf "inversion %s as [%s %s]." (string_of_assertion h)
-          wit_name hp
-      in
-      let str1 = coq_string_step_of_proof proof_p ctx in
-      Command str :: str1
+      let prf = string_of_proof proof_p indent i in
+      Printf.sprintf "%sinversion %s as [%s %s].\n%s" indent
+        (string_of_assertion h) wit_name hp prf
   | Ast.ForallIntro ((_, x, _), proof) ->
       let args, proof = get_all_intros [ x ] proof in
-      let prf = coq_string_step_of_proof proof ctx in
-      let str =
-        Printf.sprintf "intros%s."
-          (List.fold_left
-             (fun str arg -> Printf.sprintf "%s %s" str arg)
-             "" args)
-      in
-      Command str :: prf
+      let prf = string_of_proof proof indent i in
+      Printf.sprintf "%sintros%s.\n%s" indent
+        (List.fold_left (fun str arg -> Printf.sprintf "%s %s" str arg) "" args)
+        prf
   | Ast.ForallElim (_, _, _) ->
       failwith "No more elimination of forall; replaced by application."
   | Ast.ImplIntro (h, _, proof) ->
       let args, proof = get_all_intros [ h ] proof in
-      let prf = coq_string_step_of_proof proof ctx in
-      let str =
-        Printf.sprintf "intros%s."
-          (List.fold_left
-             (fun str arg -> Printf.sprintf "%s %s" str arg)
-             "" args)
-      in
-      Command str :: prf
+      let prf = string_of_proof proof indent i in
+      Printf.sprintf "%sintros%s.\n%s" indent
+        (List.fold_left (fun str arg -> Printf.sprintf "%s %s" str arg) "" args)
+        prf
   | Ast.ImplElim (_, _, _, _) ->
       failwith "No more elimination of implication; replaced by application."
   | Ast.Cut (_, Ast.Assumption _, _, _) ->
@@ -345,72 +280,60 @@ let rec coq_string_step_of_proof p ctx =
         "Assertion where the proof of the assertion is an hypothesis should \
          not happen."
   | Ast.Cut (p, Apply (f, l), h, prf) ->
-      let strcut =
-        Printf.sprintf "assert (%s) as %s by (%s)."
-          (string_of_prop (Ast.collapse_quantifier_in_proposition p))
-          h (apply f l)
-      in
-      let str = coq_string_step_of_proof prf ctx in
-      Command strcut :: str
+      let str = string_of_proof prf indent i in
+      Printf.sprintf "%sassert (%s) as %s by (%s).\n%s" indent
+        (string_of_prop (Ast.collapse_quantifier_in_proposition p))
+        h (apply f l) str
   | Ast.Cut (p, prfp, h, prf) ->
-      let strcut =
-        Printf.sprintf "assert (%s) as %s."
-          (string_of_prop (Ast.collapse_quantifier_in_proposition p))
-          h
-      in
-      let strp = coq_string_step_of_proof prfp ctx in
-      let str = coq_string_step_of_proof prf ctx in
-      [ Command strcut; Step strp; Step str ]
-  | Ast.Apply (th, args) -> [ Command (Printf.sprintf "%s." (apply th args)) ]
+      let str = block_proof prf indent i in
+      let strp = block_proof prfp indent i in
+      Printf.sprintf "%sassert (%s) as %s.\n%s\n%s" indent
+        (string_of_prop (Ast.collapse_quantifier_in_proposition p))
+        h strp str
+  | Ast.Apply (th, args) -> Printf.sprintf "%s%s." indent (apply th args)
   | Ast.NNPP (_, proof) ->
-      let proof = coq_string_step_of_proof proof ctx in
-      let str = Printf.sprintf "apply NNPP." in
-      Command str :: proof
-  | Ast.Classic _ ->
-      let str = Printf.sprintf "apply classic." in
-      [ Command str ]
-  | Ast.EqRefl (_, _) -> [ Command "reflexivity." ]
+      let proof = string_of_proof proof indent i in
+      Printf.sprintf "%sapply NNPP.\n%s" indent proof
+  | Ast.Classic _ -> Printf.sprintf "%sapply classic." indent
+  | Ast.EqRefl (_, _) -> Printf.sprintf "%sreflexivity." indent
   | Ast.EqSym (_, _, _, proof) ->
-      let proof = coq_string_step_of_proof proof ctx in
-      let str = Printf.sprintf "symmetry." in
-      Command str :: proof
+      let proof = string_of_proof proof indent i in
+      Printf.sprintf "%ssymmetry.\n%s" indent proof
   | Ast.EqTrans (_, _, y, _, proof1, proof2) ->
-      let proof1 = coq_string_step_of_proof proof1 ctx in
-      let proof2 = coq_string_step_of_proof proof2 ctx in
-      let str =
-        Printf.sprintf "transitivity %s."
-          (string_with_or_without_par (string_of_element y)
-             (not (is_atomic_element y)))
+      let proof1 = block_proof proof1 indent i in
+      let proof2 = block_proof proof2 indent i in
+      let y = string_of_element y in
+      Printf.sprintf "%stransitivity %s.\n%s\n%s" indent y proof1 proof2
+  | Ast.EqElim ((set, id, prop), x, y, hprf, heq) ->
+      let set = string_of_name set in
+      let x =
+        string_with_or_without_par (string_of_element x)
+          (not (is_atomic_element x))
       in
-      Command str :: Step proof1 :: [ Step proof2 ]
-  | Ast.EqElim ((set, id, pred), x, y, hprf, heq)
-  | Ast.EqElimR ((set, id, pred), x, y, hprf, heq) ->
-      let eqelim =
-        match p with
-        | Ast.EqElim (_, _, _, _, _) -> "eq_ind"
-        | Ast.EqElimR (_, _, _, _, _) -> "eq_ind_r"
-        | _ -> failwith "Impossible"
+      let y =
+        string_with_or_without_par (string_of_element y)
+          (not (is_atomic_element y))
       in
-      let eqind =
-        Printf.sprintf "apply (@%s %s %s (fun %s => %s) %s %s %s)." eqelim
-          (string_of_name set)
-          (string_with_or_without_par (string_of_element x)
-             (not (is_atomic_element x)))
-          id
-          (string_of_prop (Ast.collapse_quantifier_in_proposition pred))
-          (string_of_assertion hprf)
-          (string_with_or_without_par (string_of_element y)
-             (not (is_atomic_element y)))
-          (string_of_assertion heq)
+      let prop = string_of_prop (Ast.collapse_quantifier_in_proposition prop) in
+      let hprf = string_of_assertion hprf in
+      let heq = string_of_assertion heq in
+      Printf.sprintf "%sapply (@eq_ind %s %s (fun %s => %s) %s %s %s)." indent
+        set x id prop hprf y heq
+  | Ast.EqElimR ((set, id, prop), x, y, hprf, heq) ->
+      let set = string_of_name set in
+      let x =
+        string_with_or_without_par (string_of_element x)
+          (not (is_atomic_element x))
       in
-      [ Command eqind ]
-
-let coq_string_of_proof proof =
-  let list = coq_string_step_of_proof proof [] in
-  List.fold_left
-    (fun str step ->
-      Printf.sprintf "%s\n%s" str (coq_string_of_string_step_bullet "  " 0 step))
-    "" list
+      let y =
+        string_with_or_without_par (string_of_element y)
+          (not (is_atomic_element y))
+      in
+      let prop = string_of_prop (Ast.collapse_quantifier_in_proposition prop) in
+      let hprf = string_of_assertion hprf in
+      let heq = string_of_assertion heq in
+      Printf.sprintf "%sapply (@eq_ind_r %s %s (fun %s => %s) %s %s %s)." indent
+        set x id prop hprf y heq
 
 let string_of_decl (decl : (string * string) * Ast.entry) =
   match decl with
@@ -436,6 +359,6 @@ let string_of_decl (decl : (string * string) * Ast.entry) =
         (string_of_args args false)
         (string_of_element te)
   | (_, p), Ast.Theorem (prop, proof) ->
-      Printf.sprintf "Theorem %s: %s.%s\nQed." p
+      Printf.sprintf "Theorem %s: %s.\n%s\nQed." p
         (string_of_prop (Ast.collapse_quantifier_in_proposition prop))
-        (coq_string_of_proof (Proof.simplify_proof proof))
+        (string_of_proof (Proof.simplify_proof proof) " " 0)
