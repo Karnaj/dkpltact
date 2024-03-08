@@ -12,7 +12,8 @@ dune build
 
 # Usage
 
-The command `dune execk dkpltact <folder>` translates the dedukti files of `<folder>` in Coq and writes the results in the folder `output`.
+The command `dune execk dkpltact <folder>` translates the Dedukti files of `<folder>`. For now the target languages are Coq and Lean3, the results of 
+the translation are in `output/coq` and `output/lean`.
 
 
 ## Encoding
