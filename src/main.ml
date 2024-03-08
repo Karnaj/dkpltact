@@ -1,9 +1,10 @@
 module Files = Api.Files
 module P = Parsers.Parser
 
-let test file out ctx entry : Ast._global_context =
+let test file outcoq outlean ctx entry : Ast._global_context =
   let name, entry = Parse.parse_entry file ctx entry in
-  Printf.fprintf out "%s\n\n" (Coq.string_of_decl (name, entry));
+  Printf.fprintf outcoq "%s\n\n" (Coq.string_of_decl (name, entry));
+  Printf.fprintf outlean "%s\n\n" (Lean.string_of_decl (name, entry));
   match entry with
   | Ast.Set -> Ast.declare_global_set name ctx
   | Ast.Axiom statement | Ast.Theorem (statement, _) ->
@@ -17,18 +18,22 @@ let test file out ctx entry : Ast._global_context =
   | Ast.Function (args, ret, el) ->
       Ast.define_global_function name args ret el ctx
 
-let print_deps out deps =
+let print_deps out outlean deps =
   List.iter (Printf.fprintf out "Require Import %s.\n") deps;
-  Printf.fprintf out "Require Import Coq.Logic.Classical_Prop.\n\n"
+  Printf.fprintf out "Require Import Coq.Logic.Classical_Prop.\n\n";
+  List.iter (Printf.fprintf outlean "import .%s\n") deps;
+  Printf.fprintf outlean "import .dne\n\n"
 
 let parse_file folder ctx file deps =
-  let oc = open_out ("output/" ^ file ^ ".v") in
+  let occoq = open_out ("output/coq/" ^ file ^ ".v") in
+  let oclean = open_out ("output/lean/" ^ file ^ ".lean") in
   Printf.printf "\nWe are parsing %s.\n%!" file;
   let entries = P.(parse (input_from_file (folder ^ file ^ ".dk"))) in
-  print_deps oc deps;
-  let ctx = List.fold_left (test file oc) ctx entries in
+  print_deps occoq oclean deps;
+  let ctx = List.fold_left (test file occoq oclean) ctx entries in
   Printf.printf "Finish with %s.\n%!" file;
-  close_out oc;
+  close_out occoq;
+  close_out oclean;
   ctx
 
 let dep_of_file folder file =
