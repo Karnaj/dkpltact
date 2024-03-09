@@ -1057,7 +1057,7 @@ let parse_basic_definition ty te ctx =
   | T.App (T.Const (_, cst), proposition, []) when is_prf cst ->
       let _ = proposition in
       let proof, prop = parse_proof ctx te in
-      Ast.Theorem (prop, proof)
+      Ast.Theorem (prop, Proof.simplify_proof proof)
   | _ -> failwith "Error, we can only define functions, predicate and theorems."
 
 let parse_entry (mname : string) globals e =

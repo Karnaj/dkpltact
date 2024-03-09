@@ -361,4 +361,4 @@ let string_of_decl (decl : (string * string) * Ast.entry) =
   | (_, p), Ast.Theorem (prop, proof) ->
       Printf.sprintf "Theorem %s: %s.\n%s\nQed." p
         (string_of_prop (Ast.collapse_quantifier_in_proposition prop))
-        (string_of_proof (Proof.simplify_proof proof) " " 0)
+        (string_of_proof proof " " 0)
