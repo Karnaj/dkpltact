@@ -187,9 +187,12 @@ let string_of_app th args : string =
 
 let apply th args : string = Printf.sprintf "apply (%s)" (string_of_app th args)
 
-let rec block_proof p indent =
+let rec no_block_proof p indent = string_of_proof p indent
+and indented_block_proof p indent =
   let p = string_of_proof p ("  " ^ indent) in
   Printf.sprintf "%sbegin\n%s\n%send," indent p indent
+
+and block_proof p indent = no_block_proof p indent
 
 and string_of_proof p indent =
   match p with
@@ -223,7 +226,7 @@ and string_of_proof p indent =
            (Ast.collapse_quantifier_in_proposition (Ast.Conjonction (p, q))))
         (string_of_assertion h) indent hp prf
   | Ast.AndElimRight (_, _, h) ->
-      Printf.sprintf "%sfrom and.elim_right %s" indent (string_of_assertion h)
+      Printf.sprintf "%sfrom and.elim_right %s," indent (string_of_assertion h)
   | Ast.AndElimLeft (_, _, h) ->
       Printf.sprintf "%sfrom and.elim_left %s," indent (string_of_assertion h)
   | Ast.OrIntroL (_, _, prf) ->
@@ -241,8 +244,8 @@ and string_of_proof p indent =
            (Ast.collapse_quantifier_in_proposition (Ast.Disjonction (p, q))))
         (string_of_assertion h) indent hleft hright strleft strright
   | Ast.ExIntro (_, x, prf) ->
-      let prf = block_proof prf indent in
-      Printf.sprintf "%sfrom exists.intro %s\n%s" indent (string_of_element x)
+      let prf = string_of_proof prf indent in
+      Printf.sprintf "%sfrom exists.intro %s begin\n%s end," indent (string_of_element x)
         prf
   | Ast.ExInd (abs, h, _, wit_name, hp, proof_p) ->
       let prf = string_of_proof proof_p indent in
