@@ -73,8 +73,12 @@ let rec parse_all folder dones_and_ctx = function
 
 let main folder input_files =
   Printf.printf "Beginning the translation of %s.\n" folder;
-  let _ = Api.Files.add_path folder in
-  parse_all folder ([], Ast.empty_global_context) input_files
+  Api.Files.add_path folder;
+  let _ = parse_all folder ([], Ast.empty_global_context) input_files in
+  let occoq = open_out "output/coq/_CoqProject" in
+  Printf.fprintf occoq "-R . Top";
+  List.iter (Printf.fprintf occoq "\n./%s.v") input_files;
+  close_out occoq
 
 let folder = Sys.argv.(1)
 
