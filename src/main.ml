@@ -1,10 +1,11 @@
 module Files = Api.Files
 module P = Parsers.Parser
 
-let test file outcoq outlean ctx entry : Ast._global_context =
+let test file outcoq outlean outlean4 ctx entry : Ast._global_context =
   let name, entry = Parse.parse_entry file ctx entry in
   Printf.fprintf outcoq "%s\n\n" (Coq.string_of_decl (name, entry));
   Printf.fprintf outlean "%s\n\n" (Lean.string_of_decl (name, entry));
+  Printf.fprintf outlean4 "%s\n\n" (Lean4.string_of_decl (name, entry));
   match entry with
   | Ast.Set -> Ast.declare_global_set name ctx
   | Ast.Axiom statement | Ast.Theorem (statement, _) ->
@@ -26,14 +27,16 @@ let print_deps out outlean deps =
 
 let parse_file folder ctx file deps =
   let occoq = open_out ("output/coq/" ^ file ^ ".v") in
-  let oclean = open_out ("output/lean/" ^ file ^ ".lean") in
+  let oclean = open_out ("output/lean3/" ^ file ^ ".lean") in
+  let oclean4 = open_out ("output/lean4/" ^ file ^ ".lean") in
   Printf.printf "\nWe are parsing %s.\n%!" file;
   let entries = P.(parse (input_from_file (folder ^ file ^ ".dk"))) in
   print_deps occoq oclean deps;
-  let ctx = List.fold_left (test file occoq oclean) ctx entries in
+  let ctx = List.fold_left (test file occoq oclean oclean4) ctx entries in
   Printf.printf "Finish with %s.\n%!" file;
   close_out occoq;
   close_out oclean;
+  close_out oclean4;
   ctx
 
 let dep_of_file folder file =
