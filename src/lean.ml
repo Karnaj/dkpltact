@@ -27,7 +27,7 @@ let rec string_of_paramaters_type (args : Ast.name list) =
   match args with
   | [] -> ""
   | [ x ] -> string_of_name x
-  | x :: args -> string_of_name x ^ " -> " ^ string_of_paramaters_type args
+  | x :: args -> string_of_name x ^ " → " ^ string_of_paramaters_type args
 
 let rec string_of_call f args =
   let format_arg arg =
@@ -158,7 +158,7 @@ let rec string_of_prop prop =
       Printf.sprintf "∀ (%s: %s), %s" x (string_of_name set)
         (string_of_prop prop)
   | Ast.Exists (set, x, prop) ->
-      Printf.sprintf "exists (%s: %s), %s" x (string_of_name set)
+      Printf.sprintf "∃ (%s: %s), %s" x (string_of_name set)
         (string_of_prop prop)
 
 type proof_step = Command of string | Step of proof_step list
