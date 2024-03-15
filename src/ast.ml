@@ -295,3 +295,24 @@ let rec call_predicate (prop : proposition) (params : variable list)
   | id :: params, x :: args ->
       call_predicate (instantiate_in_prop id x prop) params args
   | _ -> failwith "Predicate applied to bad arguments number."
+
+let rec not_free_in_element (id : variable) (t : element) : bool =
+  match t with
+  | Variable x when id = x -> false
+  | ElementCst _ | GlobalElementCst _ | Variable _ | FunctionCall (_, []) ->
+      true
+  | FunctionCall (f, x :: l) ->
+      not_free_in_element id x && not_free_in_element id (FunctionCall (f, l))
+
+let rec not_free_in_proposition (id : variable) (prop : proposition) : bool =
+  match prop with
+  | True | False | GlobalProposition _ -> true
+  | Equality (_, x, y) | NotEquality (_, x, y) ->
+      not_free_in_element id x && not_free_in_element id y
+  | PredicateCall (f, l) -> not_free_in_element id (FunctionCall (f, l))
+  | (Forall (_, h, _) | Exists (_, h, _)) when h = id -> true
+  | Forall (_, _, p) | Exists (_, _, p) -> not_free_in_proposition id p
+  | Implication (p, q) | Conjonction (p, q) | Disjonction (p, q) ->
+      not_free_in_proposition id p && not_free_in_proposition id q
+  | Negation p | ForallList (_, p) | ExistsList (_, p) ->
+      not_free_in_proposition id p
